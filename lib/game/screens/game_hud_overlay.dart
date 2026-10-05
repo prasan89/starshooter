@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
+import 'package:star_shooter/features/gameplay/widgets/pause_overlay.dart';
 import 'package:star_shooter/game/star_shooter_game.dart';
 
 /// A Flutter widget HUD overlay rendered on top of the Flame game canvas.
@@ -14,17 +17,23 @@ class GameHudOverlay extends StatelessWidget {
     super.key,
     required this.levelId,
     required this.game,
+    this.onRestart,
   });
 
   final int levelId;
   final StarShooterGame game;
+
+  /// Optional callback invoked when the player confirms a restart from the
+  /// pause overlay. When null, the restart button is still shown but the
+  /// action has no effect beyond closing the overlay.
+  final VoidCallback? onRestart;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Column(
         children: [
-          _TopBar(levelId: levelId, game: game),
+          _TopBar(levelId: levelId, game: game, onRestart: onRestart),
           _ObjectiveRow(game: game),
           const Spacer(),
         ],
@@ -36,9 +45,14 @@ class GameHudOverlay extends StatelessWidget {
 // ── Top bar ───────────────────────────────────────────────────────────────────
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.levelId, required this.game});
+  const _TopBar({
+    required this.levelId,
+    required this.game,
+    this.onRestart,
+  });
 
   final int levelId;
+  final VoidCallback? onRestart;
   final StarShooterGame game;
 
   @override
@@ -127,35 +141,26 @@ class _TopBar extends StatelessWidget {
   }
 
   void _showPauseDialog(BuildContext context) {
-    showDialog<void>(
+    showGeneralDialog<void>(
       context: context,
-      barrierColor: Colors.black54,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Paused', style: AppTextStyles.headlineMedium),
-        content: Text(
-          'Level $levelId',
-          style: AppTextStyles.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              game.resumeGame();
-            },
-            child: const Text('Resume'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text(
-              'Quit',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, anim1, anim2) => PauseOverlay(
+        levelId: levelId,
+        game: game,
+        onResume: () {
+          Navigator.of(ctx).pop();
+          game.resumeGame();
+        },
+        onRestart: () {
+          Navigator.of(ctx).pop();
+          if (onRestart != null) onRestart!();
+        },
+        onQuit: () {
+          Navigator.of(ctx).pop();
+          context.go(AppRoutes.galaxyMap);
+        },
       ),
     );
   }

@@ -11,6 +11,7 @@ import 'package:star_shooter/game/components/projectile_component.dart';
 import 'package:star_shooter/game/components/shooter_component.dart';
 import 'package:star_shooter/game/fx/screen_effects.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
+import 'package:star_shooter/game/level/level_catalog.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
 import 'package:star_shooter/game/services/audio_service.dart';
@@ -28,9 +29,15 @@ import 'package:star_shooter/game/systems/turn_system.dart';
 /// The root Flame game class for Star Shooter.
 ///
 /// Handles the game loop, component management, and touch-based aim/shoot input.
+///
+/// Pass [levelId] to load the correct [LevelDefinition] automatically on
+/// [onLoad]. Defaults to level 1 when omitted.
 class StarShooterGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents, DragCallbacks {
-  StarShooterGame();
+  StarShooterGame({this.levelId = 1});
+
+  /// The level this game instance is playing.
+  final int levelId;
 
   late GameBoardComponent _board;
   late ShooterComponent _shooter;
@@ -77,7 +84,8 @@ class StarShooterGame extends FlameGame
     // Layer order (priority): background(-10) < board(0) < shooter(5).
     await add(CosmicBackgroundComponent());
 
-    _currentLevelDef = LevelDefinition.forLevel(1);
+    _currentLevelDef =
+        LevelCatalog.getLevelById(levelId) ?? LevelDefinition.forLevel(levelId);
     _board = GameBoardComponent(levelDef: _currentLevelDef);
     await add(_board);
 

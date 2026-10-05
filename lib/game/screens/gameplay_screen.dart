@@ -1,12 +1,20 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/domain/models/game_session.dart';
+import 'package:star_shooter/domain/models/level_progress.dart';
 import 'package:star_shooter/domain/repositories/level_repository.dart';
 import 'package:star_shooter/domain/repositories/player_repository.dart';
 import 'package:star_shooter/domain/usecases/complete_level_usecase.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
+import 'package:star_shooter/features/gameplay/screens/failure_screen.dart';
+import 'package:star_shooter/features/gameplay/screens/victory_screen.dart';
+import 'package:star_shooter/features/gameplay/widgets/pause_overlay.dart';
+import 'package:star_shooter/game/level/level_catalog.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/screens/game_hud_overlay.dart';
 import 'package:star_shooter/game/star_shooter_game.dart';
@@ -18,7 +26,9 @@ import 'package:star_shooter/game/star_shooter_game.dart';
 /// - Embeds it via [GameWidget] so Flame drives the render loop.
 /// - Overlays [GameHudOverlay] on top of the Flame canvas.
 /// - Listens to [GameManager] state changes to handle level completion and
-///   game-over flows, persisting results and navigating back to the map.
+///   game-over flows, persisting results and navigating to victory/failure screens.
+/// - Handles Android back button by pausing (via [PopScope]).
+/// - Supports restart by replacing the [StarShooterGame] instance via [setState].
 class GameplayScreen extends StatefulWidget {
   const GameplayScreen({super.key, required this.levelId});
 
@@ -30,13 +40,27 @@ class GameplayScreen extends StatefulWidget {
 
 class _GameplayScreenState extends State<GameplayScreen> {
   late StarShooterGame _game;
+
+  /// Set to true the moment we start handling a terminal state so we never
+  /// trigger the flow twice (e.g. two rapid notifications from GameManager).
   bool _completionHandled = false;
+
+  /// True while an async navigation is in flight; suppresses any further
+  /// state-change callbacks that could race with the push/replace.
+  bool _navigatingAway = false;
 
   @override
   void initState() {
     super.initState();
-    _game = StarShooterGame();
+    _initGame();
+  }
+
+  /// Creates a fresh [StarShooterGame] and wires the listener.
+  void _initGame() {
+    _game = StarShooterGame(levelId: widget.levelId);
     _game.gameManager.addListener(_onGameStateChanged);
+    _completionHandled = false;
+    _navigatingAway = false;
   }
 
   @override
@@ -46,19 +70,31 @@ class _GameplayScreenState extends State<GameplayScreen> {
     super.dispose();
   }
 
-  void _onGameStateChanged() async {
+  // ── State machine ───────────────────────────────────────────────────────────
+
+  void _onGameStateChanged() {
     final gm = _game.gameManager;
-    if (gm.state == GameState.levelComplete && !_completionHandled) {
+    if (_completionHandled || _navigatingAway) return;
+
+    if (gm.state == GameState.levelComplete) {
       _completionHandled = true;
-      await _handleLevelComplete();
-    } else if (gm.state == GameState.gameOver && !_completionHandled) {
+      unawaited(_handleLevelComplete());
+    } else if (gm.state == GameState.gameOver) {
       _completionHandled = true;
-      _handleGameOver();
+      unawaited(_handleGameOver());
     }
   }
 
+  // ── Level complete flow ─────────────────────────────────────────────────────
+
   Future<void> _handleLevelComplete() async {
+    if (!mounted) return;
     final gm = _game.gameManager;
+
+    // Brief delay to let final animations settle.
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
     final session = GameSession(
       levelId: widget.levelId,
       startedAt: DateTime.now().toUtc(),
@@ -68,178 +104,167 @@ class _GameplayScreenState extends State<GameplayScreen> {
     );
     final shotsUsed = gm.movesTotal - gm.movesRemaining;
 
-    // Run CompleteLevelUseCase
-    final useCase = CompleteLevelUseCase(
-      levelRepository: context.read<LevelRepository>(),
-      playerRepository: context.read<PlayerRepository>(),
+    // Load existing progress to detect a new-best score.
+    final repo = context.read<LevelRepository>();
+    final playerRepo = context.read<PlayerRepository>();
+    final existingResult = await repo.getLevelProgress(widget.levelId);
+    final existing = existingResult.when(
+      onSuccess: (p) => p,
+      onFailure: (_) => LevelProgress.empty(widget.levelId),
     );
-    await useCase(session, shotsUsed: shotsUsed, comboLevel: gm.comboLevel);
+    final previousBestScore = existing.bestScore;
 
-    // Refresh galaxy map notifier so the map shows updated progress
-    if (mounted) {
-      await context.read<GalaxyMapNotifier>().refresh();
-    }
-
-    // Show a brief completion overlay then navigate back
-    if (mounted) {
-      _showCompletionBanner(session.score, gm.stars);
-    }
-  }
-
-  void _handleGameOver() {
+    // Persist session result.
+    final useCase = CompleteLevelUseCase(
+      levelRepository: repo,
+      playerRepository: playerRepo,
+    );
+    final progressResult = await useCase(
+      session,
+      shotsUsed: shotsUsed,
+      comboLevel: gm.comboLevel,
+    );
     if (!mounted) return;
-    // Show failure banner then pop
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'No shots remaining — try again!',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Color(0xFF1A0A2E),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
+
+    final savedProgress = progressResult.when(
+      onSuccess: (p) => p,
+      onFailure: (_) => LevelProgress(
+        levelId: widget.levelId,
+        isCompleted: true,
+        stars: gm.stars,
+        bestScore: gm.score,
       ),
     );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) context.pop();
-    });
+
+    // Refresh galaxy map so it shows updated stars/completion.
+    await context.read<GalaxyMapNotifier>().refresh();
+    if (!mounted) return;
+
+    final isNewBest = gm.score > previousBestScore;
+
+    _navigatingAway = true;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, anim, __) => FadeTransition(
+          opacity: anim,
+          child: VictoryScreen(
+            levelId: widget.levelId,
+            score: gm.score,
+            shotsUsed: shotsUsed,
+            comboLevel: gm.comboLevel,
+            starsEarned: savedProgress.stars,
+            isNewBest: isNewBest,
+            previousBestScore: previousBestScore,
+            levelProgress: savedProgress,
+          ),
+        ),
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
   }
 
-  void _showCompletionBanner(int score, int stars) {
-    // Overlay a premium completion animation for 2 seconds then pop
-    showDialog(
+  // ── Game over flow ──────────────────────────────────────────────────────────
+
+  Future<void> _handleGameOver() async {
+    if (!mounted) return;
+    final gm = _game.gameManager;
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    // Load existing best score for comparison in the failure screen.
+    final repo = context.read<LevelRepository>();
+    final existingResult = await repo.getLevelProgress(widget.levelId);
+    final existing = existingResult.when(
+      onSuccess: (p) => p,
+      onFailure: (_) => LevelProgress.empty(widget.levelId),
+    );
+
+    final levelDef = LevelCatalog.getLevelById(widget.levelId);
+    final objective = levelDef?.objective;
+
+    _navigatingAway = true;
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, anim, __) => FadeTransition(
+          opacity: anim,
+          child: FailureScreen(
+            levelId: widget.levelId,
+            score: gm.score,
+            objectiveProgress: gm.objectiveProgress,
+            objectiveTarget: gm.objectiveTarget,
+            objectiveDescription:
+                objective?.displayText ?? 'Complete the objective',
+            bestScore: existing.bestScore,
+            shotsUsed: gm.movesTotal - gm.movesRemaining,
+          ),
+        ),
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
+  }
+
+  // ── Restart ─────────────────────────────────────────────────────────────────
+
+  void _handleRestart() {
+    _game.gameManager.removeListener(_onGameStateChanged);
+    _game.onRemove();
+    setState(_initGame);
+  }
+
+  // ── Back-button pause ───────────────────────────────────────────────────────
+
+  void _showPauseFromBack(BuildContext context) {
+    _game.pauseGame();
+    showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (_) => _LevelCompleteOverlay(score: score, stars: stars),
-    ).then((_) {
-      if (mounted) context.pop();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // Remove system chrome — the HUD provides all necessary UI.
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // Flame game canvas fills the whole screen.
-          GameWidget(game: _game),
-
-          // HUD overlay rendered above the game canvas.
-          GameHudOverlay(levelId: widget.levelId, game: _game),
-        ],
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (ctx, anim1, anim2) => PauseOverlay(
+        levelId: widget.levelId,
+        game: _game,
+        onResume: () {
+          Navigator.of(ctx).pop();
+          _game.resumeGame();
+        },
+        onRestart: () {
+          Navigator.of(ctx).pop();
+          _handleRestart();
+        },
+        onQuit: () {
+          Navigator.of(ctx).pop();
+          _navigatingAway = true;
+          context.go(AppRoutes.galaxyMap);
+        },
       ),
     );
   }
-}
 
-// ── Level complete overlay ────────────────────────────────────────────────────
-
-class _LevelCompleteOverlay extends StatefulWidget {
-  final int score;
-  final int stars;
-
-  const _LevelCompleteOverlay({required this.score, required this.stars});
-
-  @override
-  State<_LevelCompleteOverlay> createState() => _LevelCompleteOverlayState();
-}
-
-class _LevelCompleteOverlayState extends State<_LevelCompleteOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
-    _ctrl.forward();
-    // Auto-dismiss after 2.2s
-    Future.delayed(const Duration(milliseconds: 2200), () {
-      if (mounted) Navigator.of(context).pop();
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  // ── Build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ScaleTransition(
-        scale: _scale,
-        child: Container(
-          width: 280,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-          decoration: BoxDecoration(
-            color: const Color(0xFF141828),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: const Color(0xFF4A90E2).withAlpha(80),
-              width: 1.5,
+    return PopScope(
+      // Intercept Android back — pause instead of popping.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_completionHandled) {
+          _showPauseFromBack(context);
+        }
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            GameWidget(game: _game),
+            GameHudOverlay(
+              levelId: widget.levelId,
+              game: _game,
+              onRestart: _handleRestart,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF4A90E2).withAlpha(60),
-                blurRadius: 32,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'LEVEL COMPLETE',
-                style: TextStyle(
-                  color: Color(0xFFFBBF24),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (int i = 0; i < 3; i++)
-                    Icon(
-                      Icons.star_rounded,
-                      color: i < widget.stars
-                          ? const Color(0xFFFBBF24)
-                          : const Color(0xFF374151),
-                      size: 36,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '${widget.score}',
-                style: const TextStyle(
-                  color: Color(0xFFF9FAFB),
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Text(
-                'SCORE',
-                style: TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 12,
-                  letterSpacing: 2,
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
