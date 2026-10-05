@@ -213,20 +213,16 @@ class GameManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Records that the player has fired a shot by decrementing [_movesRemaining].
+  /// Records that the player has fired a shot by decrementing
+  /// [_movesRemaining].
   ///
-  /// If moves reach 0 and the objective is not yet satisfied the session
-  /// transitions to [GameState.gameOver].
+  /// Exhausting the final shot does NOT immediately show game-over. The
+  /// projectile still has to land and the board must finish resolving because
+  /// the final shot may complete the objective. The terminal state is decided
+  /// by [onResolutionComplete].
   void onShot() {
-    if (_movesRemaining > 0) {
-      _movesRemaining--;
-    }
-    if (_movesRemaining <= 0 && _state == GameState.playing) {
-      final objectiveMet = _objectiveEvaluator?.isSatisfied ?? false;
-      if (!objectiveMet) {
-        _state = GameState.gameOver;
-      }
-    }
+    if (_state != GameState.playing || _movesRemaining <= 0) return;
+    _movesRemaining--;
     notifyListeners();
   }
 
@@ -298,10 +294,13 @@ class GameManager extends ChangeNotifier {
       );
     }
 
-    // Win detection
+    // Win detection must happen before the final-shot failure check.
+    // A player is allowed to win with their last available shot.
     final objectiveMet = _objectiveEvaluator?.isSatisfied ?? boardCleared;
     if (boardCleared || objectiveMet) {
       _state = GameState.levelComplete;
+    } else if (_movesRemaining <= 0) {
+      _state = GameState.gameOver;
     }
     notifyListeners();
   }
