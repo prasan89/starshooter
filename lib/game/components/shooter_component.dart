@@ -1,100 +1,151 @@
-import 'package:flame/components.dart';
-import 'package:flutter/painting.dart';
-import 'package:star_shooter/core/theme/app_colors.dart';
+import 'dart:ui';
 
-/// Placeholder Flame component for the bubble launcher / shooter.
+import 'package:flame/components.dart';
+import 'package:flutter/material.dart' show Colors;
+import 'package:star_shooter/game/models/star_type.dart';
+import 'package:star_shooter/game/star_shooter_game.dart';
+
+/// The launcher component rendered at the bottom of the screen.
 ///
-/// Renders a glowing upward-pointing triangle at the bottom-centre of the
-/// screen. Rotation, aiming, and shoot mechanics are added in M2.
-class ShooterComponent extends PositionComponent {
+/// Displays the current star (large, glowing, centred) and a smaller
+/// next-star preview to the top-right of the launcher area. A subtle
+/// platform decoration rings the current star.
+///
+/// Call [loadStars] whenever the active / upcoming star changes.
+class ShooterComponent extends PositionComponent
+    with HasGameReference<StarShooterGame> {
+  StarType _currentType = StarType.normal;
+  StarType _nextType = StarType.normal;
+
+  /// World-space position of the launcher centre.
+  Vector2 _launcherCenter = Vector2.zero();
+
+  // _basePaint is reserved for a future platform-fill decoration.
+  // ignore: unused_field
+  late Paint _basePaint;
+  late Paint _currentGlowPaint;
+  late Paint _currentFillPaint;
+  late Paint _nextPaint;
+  late Paint _ringPaint;
+
+  static const double _currentRadius = 26.0;
+  static const double _nextRadius = 14.0;
+
   ShooterComponent() : super(priority: 5);
 
-  // Triangl geometry — half-base and height in logical pixels.
-  static const double _halfBase = 22.0;
-  static const double _triangleHeight = 44.0;
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _updateLayout();
+    _updatePaints();
+  }
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-
-    // Anchor: bottom-centre of the screen, slightly above the edge.
-    position = Vector2(
-      size.x / 2,
-      size.y - _triangleHeight - 24,
-    );
+    _updateLayout();
   }
+
+  // ── Layout & paint helpers ─────────────────────────────────────────────────
+
+  void _updateLayout() {
+    final gs = game.size;
+    // Launcher centre: horizontally centred, 82 % down the screen.
+    _launcherCenter = Vector2(gs.x / 2, gs.y * 0.82);
+    // Component covers full width, from 74 % to 92 % of height.
+    position = Vector2(0, gs.y * 0.74);
+    size = Vector2(gs.x, gs.y * 0.18);
+  }
+
+  void _updatePaints() {
+    _basePaint = Paint()
+      ..color = const Color(0xFF1A1E3A)
+      ..style = PaintingStyle.fill;
+
+    _currentGlowPaint = Paint()
+      ..color = _currentType.color.withValues(alpha: 0.35)
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
+
+    _currentFillPaint = Paint()
+      ..color = _currentType.color
+      ..style = PaintingStyle.fill;
+
+    _nextPaint = Paint()
+      ..color = _nextType.color
+      ..style = PaintingStyle.fill;
+
+    _ringPaint = Paint()
+      ..color = const Color(0x884A90E2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+  }
+
+  // ── Public API ─────────────────────────────────────────────────────────────
+
+  /// Update the displayed stars and repaint.
+  void loadStars(StarType current, StarType next) {
+    _currentType = current;
+    _nextType = next;
+    _updatePaints();
+  }
+
+  /// Local coords (relative to this component's [position]).
+  Vector2 get launcherLocalCenter =>
+      Vector2(_launcherCenter.x, _launcherCenter.y - position.y);
+
+  /// World coords — use this when computing shot trajectories.
+  Vector2 get launcherWorldCenter => _launcherCenter;
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
 
   @override
   void render(Canvas canvas) {
-    // Build the triangle path (pointing upward, tip at y=0, base at y=height).
-    final path = Path()
-      ..moveTo(0, -_triangleHeight) // tip
-      ..lineTo(-_halfBase, 0) // bottom-left
-      ..lineTo(_halfBase, 0) // bottom-right
-      ..close();
+    final lc = launcherLocalCenter;
 
-    // Glow / halo effect — a slightly larger blurred copy behind.
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.primary.withValues(alpha: 0.25)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
+    // Subtle platform ring.
+    final platformPaint = Paint()
+      ..color = const Color(0x33FFFFFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    canvas.drawCircle(Offset(lc.x, lc.y), _currentRadius + 10, platformPaint);
 
-    // Filled triangle — cosmic-blue gradient.
-    canvas.drawPath(
-      path,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.primary, AppColors.secondary],
-        ).createShader(
-          Rect.fromCenter(
-            center: const Offset(0, -_triangleHeight / 2),
-            width: _halfBase * 2,
-            height: _triangleHeight,
-          ),
-        ),
-    );
+    // Outer accent ring.
+    canvas.drawCircle(Offset(lc.x, lc.y), _currentRadius + 6, _ringPaint);
 
-    // Outline.
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.textPrimary.withValues(alpha: 0.6)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-
-    // Small indicator circle at the barrel tip.
+    // Glow halo.
     canvas.drawCircle(
-      const Offset(0, -_triangleHeight),
-      4,
-      Paint()..color = AppColors.starFilled,
+      Offset(lc.x, lc.y),
+      _currentRadius * 1.5,
+      _currentGlowPaint,
     );
 
-    // Dashed aim-line stub pointing straight up (3 dashes, purely decorative).
-    _drawAimDashes(canvas);
-  }
+    // Current star fill.
+    canvas.drawCircle(Offset(lc.x, lc.y), _currentRadius, _currentFillPaint);
 
-  void _drawAimDashes(Canvas canvas) {
-    final dashPaint = Paint()
-      ..color = AppColors.textSecondary.withValues(alpha: 0.35)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
+    // Highlight specular.
+    final highlightPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(
+        lc.x - _currentRadius * 0.25,
+        lc.y - _currentRadius * 0.25,
+      ),
+      _currentRadius * 0.28,
+      highlightPaint,
+    );
 
-    const double dashLen = 10.0;
-    const double gap = 6.0;
-    const int dashCount = 3;
-    double y = -_triangleHeight - gap;
-    for (int i = 0; i < dashCount; i++) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(0, y - dashLen),
-        dashPaint,
-      );
-      y -= dashLen + gap;
-    }
+    // Next-star preview — top-right of the launcher.
+    final nextX = lc.x + _currentRadius + 20;
+    final nextY = lc.y - _currentRadius + 4;
+
+    final nextBgPaint = Paint()
+      ..color = const Color(0x55FFFFFF)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(nextX, nextY), _nextRadius + 3, nextBgPaint);
+    canvas.drawCircle(Offset(nextX, nextY), _nextRadius, _nextPaint);
   }
 }

@@ -5,9 +5,10 @@ import 'package:star_shooter/game/star_shooter_game.dart';
 
 /// A Flutter widget HUD overlay rendered on top of the Flame game canvas.
 ///
-/// Milestone 1 shows a semi-transparent top bar with the level name,
-/// placeholder score, remaining shots, and a pause button. Game logic
-/// (real score, shot counter) is wired up in M2.
+/// Shows a semi-transparent top bar with the level name, live score, remaining
+/// shots (e.g. "12/20"), and a pause button.  Score and shot-count values are
+/// driven by [StarShooterGame.gameManager] via [ListenableBuilder] so the HUD
+/// rebuilds automatically whenever the manager notifies.
 class GameHudOverlay extends StatelessWidget {
   const GameHudOverlay({
     super.key,
@@ -52,51 +53,57 @@ class _TopBar extends StatelessWidget {
           ),
         ),
       ),
-      child: Row(
-        children: [
-          // Level name
-          Expanded(
-            child: Text(
-              'Level $levelId',
-              style: AppTextStyles.titleMedium,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+      child: ListenableBuilder(
+        listenable: game.gameManager,
+        builder: (context, _) {
+          final manager = game.gameManager;
+          return Row(
+            children: [
+              // Level name
+              Expanded(
+                child: Text(
+                  'Level $levelId',
+                  style: AppTextStyles.titleMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
 
-          // Score placeholder
-          const _HudChip(
-            icon: Icons.star_rounded,
-            iconColor: AppColors.starFilled,
-            label: '0',
-            tooltip: 'Score',
-          ),
+              // Live score
+              _HudChip(
+                icon: Icons.star_rounded,
+                iconColor: AppColors.starFilled,
+                label: manager.score.toString(),
+                tooltip: 'Score',
+              ),
 
-          const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-          // Remaining shots placeholder
-          const _HudChip(
-            icon: Icons.bubble_chart_rounded,
-            iconColor: AppColors.secondary,
-            label: '—',
-            tooltip: 'Shots left',
-          ),
+              // Remaining shots — "used/total" format
+              _HudChip(
+                icon: Icons.bubble_chart_rounded,
+                iconColor: AppColors.secondary,
+                label: '${manager.movesRemaining}/${manager.movesTotal}',
+                tooltip: 'Shots left',
+              ),
 
-          const SizedBox(width: 8),
+              const SizedBox(width: 8),
 
-          // Pause button
-          IconButton(
-            icon: const Icon(
-              Icons.pause_circle_outline_rounded,
-              color: AppColors.textPrimary,
-              size: 28,
-            ),
-            tooltip: 'Pause',
-            onPressed: () {
-              game.pauseGame();
-              _showPauseDialog(context);
-            },
-          ),
-        ],
+              // Pause button
+              IconButton(
+                icon: const Icon(
+                  Icons.pause_circle_outline_rounded,
+                  color: AppColors.textPrimary,
+                  size: 28,
+                ),
+                tooltip: 'Pause',
+                onPressed: () {
+                  game.pauseGame();
+                  _showPauseDialog(context);
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }

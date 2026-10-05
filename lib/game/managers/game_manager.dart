@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:star_shooter/game/models/shooter_game_state.dart';
+import 'package:star_shooter/game/models/star_type.dart';
+
 /// Possible states the game session can be in.
 enum GameState {
   /// Assets / level data are still being loaded.
@@ -28,6 +31,16 @@ class GameManager extends ChangeNotifier {
   int _level = 1;
   int _stars = 0;
 
+  // ── Shooter-specific fields ───────────────────────────────────────────────
+
+  int _movesRemaining = 20;
+  int _movesTotal = 20;
+  int _starsEarned = 0;
+  int _starsRequired = 5;
+  StarType _currentStarType = StarType.normal;
+  StarType _nextStarType = StarType.normal;
+  ShooterGameState _shooterState = ShooterGameState.ready;
+
   // ── Getters ──────────────────────────────────────────────────────────────
 
   GameState get state => _state;
@@ -40,6 +53,15 @@ class GameManager extends ChangeNotifier {
   bool get isComplete => _state == GameState.levelComplete;
   bool get isGameOver => _state == GameState.gameOver;
 
+  int get movesRemaining => _movesRemaining;
+  int get movesTotal => _movesTotal;
+  int get totalMoves => _movesTotal;
+  int get starsEarned => _starsEarned;
+  int get starsRequired => _starsRequired;
+  StarType get currentStarType => _currentStarType;
+  StarType get nextStarType => _nextStarType;
+  ShooterGameState get shooterState => _shooterState;
+
   // ── Actions ──────────────────────────────────────────────────────────────
 
   /// Initialises a new session for [levelId] and transitions to [GameState.playing].
@@ -47,6 +69,26 @@ class GameManager extends ChangeNotifier {
     _level = levelId;
     _score = 0;
     _stars = 0;
+    _state = GameState.playing;
+    notifyListeners();
+  }
+
+  /// Initialises shooter-specific state for [levelId] and transitions to
+  /// [GameState.playing].
+  ///
+  /// [moves] sets both the remaining and total move counts.
+  /// [starsReq] sets the number of stars the player must earn to pass the level.
+  void initLevel(int levelId, {int moves = 20, int starsReq = 5}) {
+    _level = levelId;
+    _score = 0;
+    _stars = 0;
+    _movesRemaining = moves;
+    _movesTotal = moves;
+    _starsEarned = 0;
+    _starsRequired = starsReq;
+    _currentStarType = StarType.normal;
+    _nextStarType = StarType.normal;
+    _shooterState = ShooterGameState.ready;
     _state = GameState.playing;
     notifyListeners();
   }
@@ -93,6 +135,47 @@ class GameManager extends ChangeNotifier {
     _score = 0;
     _level = 1;
     _stars = 0;
+    _movesRemaining = 20;
+    _movesTotal = 20;
+    _starsEarned = 0;
+    _starsRequired = 5;
+    _currentStarType = StarType.normal;
+    _nextStarType = StarType.normal;
+    _shooterState = ShooterGameState.ready;
+    notifyListeners();
+  }
+
+  /// Records that the player has fired a shot by decrementing [_movesRemaining].
+  void onShot() {
+    if (_movesRemaining > 0) {
+      _movesRemaining--;
+    }
+    notifyListeners();
+  }
+
+  /// Adds [count] to [_starsEarned].
+  ///
+  /// Automatically transitions to [GameState.levelComplete] when
+  /// [starsEarned] reaches or exceeds [starsRequired].
+  void onStarEarned(int count) {
+    _starsEarned += count;
+    if (_starsEarned >= _starsRequired) {
+      _state = GameState.levelComplete;
+    }
+    notifyListeners();
+  }
+
+  /// Updates the shooter loop state machine.
+  void updateShooterState(ShooterGameState state) {
+    _shooterState = state;
+    notifyListeners();
+  }
+
+  /// Advances the star-type queue: [nextCurrent] becomes the current star and
+  /// [nextNext] becomes the upcoming (preview) star.
+  void advanceTurn(StarType nextCurrent, StarType nextNext) {
+    _currentStarType = nextCurrent;
+    _nextStarType = nextNext;
     notifyListeners();
   }
 }

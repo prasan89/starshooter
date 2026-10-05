@@ -1,112 +1,143 @@
+import 'dart:ui';
+
 import 'package:flame/components.dart';
-import 'package:flutter/widgets.dart';
-import 'package:star_shooter/core/theme/app_colors.dart';
+import 'package:star_shooter/game/components/star_component.dart';
+import 'package:star_shooter/game/models/board_grid.dart';
+import 'package:star_shooter/game/models/star_model.dart';
+import 'package:star_shooter/game/star_shooter_game.dart';
 
-/// Placeholder Flame component for the bubble-shooter game board.
+/// The real game-board Flame component for Star Shooter.
 ///
-/// Renders a semi-transparent arc/grid area and a "GAME BOARD — M2" label so
-/// the screen has visible content during Milestone 1. The real bubble grid and
-/// game logic are wired up in M2.
-class GameBoardComponent extends PositionComponent {
-  GameBoardComponent() : super(priority: 0);
+/// Owns the [BoardGrid] data model and keeps a matching list of
+/// [StarComponent] children in sync. Layout is re-computed on every
+/// [onGameResize] call so the board looks correct on any screen size.
+///
+/// Board geometry:
+/// * 94 % of canvas width, centred horizontally.
+/// * Starts 6 % from the top, spans 62 % of canvas height.
+class GameBoardComponent extends PositionComponent
+    with HasGameReference<StarShooterGame> {
+  BoardGrid _grid;
+  final List<StarComponent> _starComponents = [];
+  Rect _boardRect = Rect.zero;
 
-  late TextComponent _label;
+  GameBoardComponent()
+      : _grid = BoardGrid.initialBoard(rows: 5),
+        super(priority: 0);
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-
-    _label = TextComponent(
-      text: 'GAME BOARD — M2',
-      textRenderer: TextPaint(
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primary,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-    await add(_label);
+    _updateBoardRect();
+    await _syncStarsToBoard();
   }
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-
-    // The board occupies the upper 65 % of the canvas, centred horizontally.
-    final boardWidth = size.x * 0.9;
-    final boardHeight = size.y * 0.65;
-    size = Vector2(boardWidth, boardHeight);
-    position = Vector2((size.x - boardWidth) / 2, size.y * 0.04);
-
-    // Centre the label inside the board.
-    _label.position = Vector2(
-      boardWidth / 2 - (_label.size.x / 2),
-      boardHeight / 2 - 12,
-    );
+    _updateBoardRect();
+    _repositionStars();
   }
+
+  // ── Board geometry ─────────────────────────────────────────────────────────
+
+  void _updateBoardRect() {
+    final gameSize = game.size;
+
+    final boardW = gameSize.x * 0.94;
+    final boardLeft = (gameSize.x - boardW) / 2;
+    final boardTop = gameSize.y * 0.06;
+    final boardH = gameSize.y * 0.62;
+
+    _boardRect = Rect.fromLTWH(boardLeft, boardTop, boardW, boardH);
+
+    // Position this component at the board origin so render() draws at (0,0).
+    position = Vector2(_boardRect.left, _boardRect.top);
+  }
+
+  // ── Star synchronisation ───────────────────────────────────────────────────
+
+  Future<void> _syncStarsToBoard() async {
+    for (final child in _starComponents) {
+      child.removeFromParent();
+    }
+    _starComponents.clear();
+
+    for (final star in _grid.allStars) {
+      final pixelCenter = _grid.gridToPixel(star.gridPosition, _boardRect);
+      final component = StarComponent(star);
+      // Convert absolute pixel position to local (component-relative) coords.
+      component.position = Vector2(
+        pixelCenter.dx - _boardRect.left,
+        pixelCenter.dy - _boardRect.top,
+      );
+      await add(component);
+      _starComponents.add(component);
+    }
+  }
+
+  void _repositionStars() {
+    for (final component in _starComponents) {
+      final pixelCenter =
+          _grid.gridToPixel(component.model.gridPosition, _boardRect);
+      component.position = Vector2(
+        pixelCenter.dx - _boardRect.left,
+        pixelCenter.dy - _boardRect.top,
+      );
+    }
+  }
+
+  // ── Public API ─────────────────────────────────────────────────────────────
+
+  /// Places a projectile star at the grid cell nearest to [pixelPos].
+  ///
+  /// If the resolved cell is invalid or already occupied the call is a no-op.
+  Future<void> placeProjectile(StarModel star, Offset pixelPos) async {
+    final gridPos = _grid.pixelToGrid(pixelPos, _boardRect);
+    if (!_grid.isValidPosition(gridPos) || _grid.isOccupied(gridPos)) {
+      return;
+    }
+    final placed = star.copyWith(gridPosition: gridPos);
+    _grid = _grid.placeStar(placed, gridPos);
+    await _syncStarsToBoard();
+  }
+
+  BoardGrid get grid => _grid;
+  Rect get boardRect => _boardRect;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   @override
   void render(Canvas canvas) {
-    final w = size.x;
-    final h = size.y;
+    super.render(canvas);
 
-    // Outer rounded-rect border.
+    // Subtle semi-transparent dark panel behind the star grid.
+    final bgPaint = Paint()
+      ..color = const Color(0x1A4A90E2)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, _boardRect.width, _boardRect.height),
+        const Radius.circular(16),
+      ),
+      bgPaint,
+    );
+
+    // Board outline.
     final borderPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.35)
+      ..color = const Color(0x594A90E2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, w, h),
+        Rect.fromLTWH(0, 0, _boardRect.width, _boardRect.height),
         const Radius.circular(16),
       ),
       borderPaint,
-    );
-
-    // Grid dots — 7 columns × 10 rows representing bubble slots.
-    const cols = 7;
-    const rows = 10;
-    final cellW = w / cols;
-    final cellH = h / rows;
-    final dotPaint = Paint()
-      ..color = AppColors.surface.withValues(alpha: 0.8)
-      ..style = PaintingStyle.fill;
-
-    for (int row = 0; row < rows; row++) {
-      // Odd rows are offset by half a cell (hex grid layout).
-      final xOffset = (row.isOdd) ? cellW * 0.5 : 0.0;
-      final effectiveCols = row.isOdd ? cols - 1 : cols;
-      for (int col = 0; col < effectiveCols; col++) {
-        canvas.drawCircle(
-          Offset(
-            xOffset + cellW * col + cellW / 2,
-            cellH * row + cellH / 2,
-          ),
-          cellW * 0.28,
-          dotPaint,
-        );
-      }
-    }
-
-    // Arc at the top of the board (decorative launcher trajectory hint).
-    final arcPaint = Paint()
-      ..color = AppColors.secondary.withValues(alpha: 0.2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    canvas.drawArc(
-      Rect.fromCenter(
-        center: Offset(w / 2, h + h * 0.1),
-        width: w * 1.4,
-        height: h * 0.8,
-      ),
-      -3.14,
-      3.14,
-      false,
-      arcPaint,
     );
   }
 }

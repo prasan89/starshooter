@@ -1,18 +1,41 @@
+import 'dart:math' as math;
+
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:star_shooter/game/components/aim_trajectory_component.dart';
 import 'package:star_shooter/game/components/cosmic_background_component.dart';
 import 'package:star_shooter/game/components/game_board_component.dart';
+import 'package:star_shooter/game/components/projectile_component.dart';
 import 'package:star_shooter/game/components/shooter_component.dart';
+import 'package:star_shooter/game/managers/game_manager.dart';
+import 'package:star_shooter/game/models/star_model.dart';
+import 'package:star_shooter/game/systems/turn_system.dart';
 
 /// The root Flame game class for Star Shooter.
 ///
-/// Milestone 1 sets up the camera, adds placeholder components for the
-/// background, game board, and shooter. Collision detection and keyboard
-/// handling mixins are included ready for M2.
+/// Handles the game loop, component management, and touch-based aim/shoot input.
 class StarShooterGame extends FlameGame
-    with HasCollisionDetection, HasKeyboardHandlerComponents {
+    with HasCollisionDetection, HasKeyboardHandlerComponents, DragCallbacks {
   StarShooterGame();
+
+  late GameBoardComponent _board;
+  late ShooterComponent _shooter;
+  late AimTrajectoryComponent _trajectory;
+
+  Vector2 _aimDirection = Vector2(0, -1);
+  bool _isDragging = false;
+
+  final GameManager gameManager = GameManager();
+  final TurnSystem turnSystem = TurnSystem();
+
+  // ── Public accessors ────────────────────────────────────────────────────────
+
+  GameBoardComponent get board => _board;
+  ShooterComponent get shooter => _shooter;
+  AimTrajectoryComponent get trajectory => _trajectory;
+
+  // ── Lifecycle ───────────────────────────────────────────────────────────────
 
   @override
   Future<void> onLoad() async {
@@ -23,13 +46,110 @@ class StarShooterGame extends FlameGame
 
     // Layer order (priority): background(-10) < board(0) < shooter(5).
     await add(CosmicBackgroundComponent());
-    await add(GameBoardComponent());
-    await add(ShooterComponent());
+
+    _board = GameBoardComponent();
+    await add(_board);
+
+    _shooter = ShooterComponent();
+    await add(_shooter);
+
+    _trajectory = AimTrajectoryComponent();
+    _trajectory.priority = 3;
+    await add(_trajectory);
+
+    // Initialise subsystems.
+    turnSystem.initialize(20);
+    gameManager.initLevel(1);
   }
+
+  // ── Pause / resume ──────────────────────────────────────────────────────────
 
   /// Pauses the game loop and all component updates.
   void pauseGame() => paused = true;
 
   /// Resumes the game loop.
   void resumeGame() => paused = false;
+
+  // ── Drag / aim input ────────────────────────────────────────────────────────
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
+    if (!turnSystem.canShoot) return;
+    _isDragging = true;
+    turnSystem.startAiming();
+    final dir = _computeAimDir(event.canvasPosition);
+    _aimDirection = dir;
+    _trajectory.showTrajectory(
+      from: _shooter.launcherWorldCenter,
+      direction: dir,
+    );
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    super.onDragUpdate(event);
+    if (!_isDragging) return;
+    final dir = _computeAimDir(event.canvasStartPosition);
+    _aimDirection = dir;
+    _trajectory.showTrajectory(
+      from: _shooter.launcherWorldCenter,
+      direction: dir,
+    );
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    super.onDragEnd(event);
+    if (!_isDragging) return;
+    _isDragging = false;
+    _trajectory.hideTrajectory();
+    shootProjectile();
+  }
+
+  // ── Shooting ────────────────────────────────────────────────────────────────
+
+  /// Fires the current star in the aim direction.
+  void shootProjectile() {
+    final currentType = gameManager.currentStarType;
+    final model = StarModel.projectile(type: currentType);
+    final projectile = ProjectileComponent(
+      model: model,
+      direction: _aimDirection,
+    );
+    projectile.position = _shooter.launcherWorldCenter.clone();
+    add(projectile);
+    gameManager.onShot();
+    turnSystem.shoot();
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  /// Computes a clamped aim direction from the launcher centre toward [touch].
+  ///
+  /// The angle is clamped so the shot travels upward and stays between 20° and
+  /// 160° measured from the left-pointing horizontal (i.e. the shot can never
+  /// fire nearly sideways or downward).
+  Vector2 _computeAimDir(Vector2 touch) {
+    final launcher = _shooter.launcherWorldCenter;
+    final raw = touch - launcher;
+
+    // Angle from the positive-x axis (right).  We want "up" to be 90°.
+    // The raw direction from launcher → touch points downward when touch is
+    // above the launcher, so flip the y to get the direction of travel.
+    final travel = Vector2(raw.x, -raw.y);
+    if (travel.isZero()) return Vector2(0, -1);
+
+    // atan2 gives angle from positive-x axis.
+    double angle = math.atan2(travel.y, travel.x);
+
+    // Clamp to [20°, 160°] — i.e. between nearly-left and nearly-right while
+    // still pointing upward.
+    const minAngle = 20.0 * math.pi / 180.0;
+    const maxAngle = 160.0 * math.pi / 180.0;
+    angle = angle.clamp(minAngle, maxAngle);
+
+    // Convert back to a Vector2 in game space (flip y again).
+    return Vector2(math.cos(angle), -math.sin(angle));
+  }
 }

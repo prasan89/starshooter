@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/widgets/error_widget.dart';
-import 'package:star_shooter/features/gameplay/screens/gameplay_screen.dart';
+import 'package:star_shooter/game/screens/gameplay_screen.dart';
 import 'package:star_shooter/features/home/screens/home_screen.dart';
 import 'package:star_shooter/features/home/screens/splash_screen.dart';
 import 'package:star_shooter/features/levels/screens/galaxy_map_screen.dart';
@@ -59,7 +59,7 @@ abstract final class AppRouter {
         path: AppRoutes.gameplay,
         name: AppRoutes.gameplayName,
         builder: (context, state) {
-          final levelId = state.pathParameters['levelId'] ?? '1_1';
+          final levelId = int.parse(state.pathParameters['levelId']!);
           return GameplayScreen(levelId: levelId);
         },
       ),
