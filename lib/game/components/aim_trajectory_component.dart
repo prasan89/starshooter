@@ -65,9 +65,10 @@ class AimTrajectoryComponent extends Component
     if (!_visible || _direction.isZero()) return;
 
     final screenSize = game.size;
-    final boardTop = game.board.boardRect.top;
-    final leftWall = _dotHalfSize;
-    final rightWall = screenSize.x - _dotHalfSize;
+    final starRadius = game.board.grid.config.starRadius;
+    final boardTop = game.board.boardRect.top + starRadius;
+    final leftWall = starRadius;
+    final rightWall = screenSize.x - starRadius;
 
     // IMPORTANT: this simulation is entirely local to render(). The previous
     // implementation mutated _startPos while painting, which caused the
