@@ -65,53 +65,53 @@ class AimTrajectoryComponent extends Component
     if (!_visible || _direction.isZero()) return;
 
     final screenSize = game.size;
-    const leftWall = 0.0;
-    final rightWall = screenSize.x;
+    final boardTop = game.board.boardRect.top;
+    final leftWall = _dotHalfSize;
+    final rightWall = screenSize.x - _dotHalfSize;
 
-    // Current dot travel state — may reflect off walls.
-    Vector2 currentDir = _direction.clone();
-    double t = _dotSpacing;
+    // IMPORTANT: this simulation is entirely local to render(). The previous
+    // implementation mutated _startPos while painting, which caused the
+    // trajectory to drift every frame and made the preview disagree with the
+    // projectile.
+    var cursor = _startPos.clone();
+    var currentDir = _direction.normalized();
 
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (int i = 0; i < _maxDots; i++) {
-      // Compute dot position by accumulating spacing along current direction.
-      // We need to account for potential wall bounces per segment rather than
-      // a single linear step.
-      final rawPos = _startPos + currentDir * t;
+      var remaining = _dotSpacing;
 
-      // Check if a bounce happened between previous position and rawPos.
-      Vector2 pos;
-      if (rawPos.x < leftWall) {
-        // Reflect: flip X direction and recompute.
-        currentDir = Vector2(-currentDir.x, currentDir.y);
-        final overShoot = leftWall - rawPos.x;
-        pos = Vector2(leftWall + overShoot, rawPos.y);
-        // Recalibrate t so next dot continues correctly.
-        t = _dotSpacing;
-        _startPos = pos.clone();
-      } else if (rawPos.x > rightWall) {
-        currentDir = Vector2(-currentDir.x, currentDir.y);
-        final overShoot = rawPos.x - rightWall;
-        pos = Vector2(rightWall - overShoot, rawPos.y);
-        t = _dotSpacing;
-        _startPos = pos.clone();
-      } else {
-        pos = rawPos;
+      // Advance exactly one dot spacing, reflecting at the side walls as
+      // needed. This is the same basic movement model used by the projectile.
+      while (remaining > 0) {
+        if (currentDir.x.abs() < 0.0001) {
+          cursor += currentDir * remaining;
+          remaining = 0;
+          continue;
+        }
+
+        final distanceToWall = currentDir.x > 0
+            ? (rightWall - cursor.x) / currentDir.x
+            : (leftWall - cursor.x) / currentDir.x;
+
+        if (distanceToWall > 0 && distanceToWall < remaining) {
+          cursor += currentDir * distanceToWall;
+          cursor.x = currentDir.x > 0 ? rightWall : leftWall;
+          currentDir = Vector2(-currentDir.x, currentDir.y);
+          remaining -= distanceToWall;
+        } else {
+          cursor += currentDir * remaining;
+          remaining = 0;
+        }
       }
 
-      // Stop once dot would be drawn above the top or below the bottom.
-      if (pos.y < 0 || pos.y > screenSize.y) break;
+      // Stop at the actual board ceiling, not the screen top. The shooter
+      // cannot land above the playable board.
+      if (cursor.y <= boardTop) break;
 
-      // --- Visual attributes ---
-
-      // Scale pulse: gentle throb, each dot offset in phase.
       final scale = 0.85 + math.sin(_time * 3.0 + i * 0.5) * 0.15;
-
-      // Gradient factor: 0.0 at launcher end, 1.0 at far end.
       final grad = i / _maxDots;
 
-      // Color: lerp from tinted (near) to near-white dim (far).
       final nearColor = Color.fromARGB(
         (0.9 * 255).round(),
         (_tintColor.r * 255.0).round().clamp(0, 255),
@@ -119,22 +119,22 @@ class AimTrajectoryComponent extends Component
         (_tintColor.b * 255.0).round().clamp(0, 255),
       );
       final farColor = Colors.white.withValues(alpha: 0.2);
-      final dotColor = Color.lerp(nearColor, farColor, grad)!;
+      paint.color = Color.lerp(nearColor, farColor, grad)!;
 
-      paint.color = dotColor;
-
-      // Draw a diamond (rotated square).
       final half = _dotHalfSize * scale;
       canvas.save();
-      canvas.translate(pos.x, pos.y);
-      canvas.rotate(math.pi / 4); // 45° → diamond
+      canvas.translate(cursor.x, cursor.y);
+      canvas.rotate(math.pi / 4);
       canvas.drawRect(
-        Rect.fromCenter(center: Offset.zero, width: half * 2, height: half * 2),
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: half * 2,
+          height: half * 2,
+        ),
         paint,
       );
       canvas.restore();
-
-      t += _dotSpacing;
     }
+  }
   }
 }
