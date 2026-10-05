@@ -37,11 +37,11 @@ class LevelCatalog {
         unlockRequirement: 0,
       ),
       moveLimit: 30,
-      scoreTarget: 300,
+      scoreTarget: 750,
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal],
       randomSeed: 137,
-      objective: LevelObjective.scoreTarget(300),
+      objective: LevelObjective.clearStars(15),
       initialStars: [
         // Row 0 — balanced colors, max group size 1
         InitialStarPlacement(position: GridPosition(0, 0), type: StarType.normal, colorIndex: 2),
@@ -332,7 +332,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal],
       randomSeed: 548,
-      objective: LevelObjective.scoreTarget(500),
+      objective: LevelObjective.scoreTarget(5000),
       initialStars: [
         // Row 0: dense top row
         InitialStarPlacement(
@@ -600,7 +600,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal],
       randomSeed: 822,
-      objective: LevelObjective.scoreTarget(700),
+      objective: LevelObjective.scoreTarget(7000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -734,7 +734,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal],
       randomSeed: 959,
-      objective: LevelObjective.scoreTarget(800),
+      objective: LevelObjective.scoreTarget(8000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -1010,7 +1010,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal],
       randomSeed: 1233,
-      objective: LevelObjective.scoreTarget(1000),
+      objective: LevelObjective.scoreTarget(10000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -1591,7 +1591,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor],
       randomSeed: 1781,
-      objective: LevelObjective.scoreTarget(1200),
+      objective: LevelObjective.scoreTarget(12000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -2127,7 +2127,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor],
       randomSeed: 2329,
-      objective: LevelObjective.scoreTarget(1500),
+      objective: LevelObjective.scoreTarget(15000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -2696,7 +2696,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
       randomSeed: 2877,
-      objective: LevelObjective.scoreTarget(1500),
+      objective: LevelObjective.scoreTarget(15000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -2948,7 +2948,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
       randomSeed: 3151,
-      objective: LevelObjective.scoreTarget(1700),
+      objective: LevelObjective.scoreTarget(17000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -3192,7 +3192,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
       randomSeed: 3425,
-      objective: LevelObjective.scoreTarget(1900),
+      objective: LevelObjective.scoreTarget(19000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -3444,7 +3444,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
       randomSeed: 3699,
-      objective: LevelObjective.scoreTarget(2100),
+      objective: LevelObjective.scoreTarget(21000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -3822,7 +3822,7 @@ class LevelCatalog {
       failureBoundaryRow: 10,
       availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
       randomSeed: 4110,
-      objective: LevelObjective.scoreTarget(2500),
+      objective: LevelObjective.scoreTarget(25000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -4238,7 +4238,7 @@ class LevelCatalog {
         StarType.blackHole,
       ],
       randomSeed: 4521,
-      objective: LevelObjective.scoreTarget(2500),
+      objective: LevelObjective.scoreTarget(25000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -4634,7 +4634,7 @@ class LevelCatalog {
         StarType.blackHole,
       ],
       randomSeed: 4932,
-      objective: LevelObjective.scoreTarget(3000),
+      objective: LevelObjective.scoreTarget(30000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
@@ -5026,7 +5026,7 @@ class LevelCatalog {
         StarType.blackHole,
       ],
       randomSeed: 5343,
-      objective: LevelObjective.scoreTarget(3500),
+      objective: LevelObjective.scoreTarget(35000),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),

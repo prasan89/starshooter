@@ -5546,7 +5546,7 @@ const List<LevelDefinition> levelsFrom101To150 = [
       StarType.frozenStar,
     ],
     randomSeed: 17947,
-    objective: LevelObjective.scoreTarget(11000),
+    objective: LevelObjective.scoreTarget(110000),
     initialStars: [
       // Row 0: full normal
       InitialStarPlacement(
@@ -5944,7 +5944,7 @@ const List<LevelDefinition> levelsFrom101To150 = [
       StarType.frozenStar,
     ],
     randomSeed: 18221,
-    objective: LevelObjective.scoreTarget(12000),
+    objective: LevelObjective.scoreTarget(120000),
     initialStars: [
       // Row 0: full frozen
       InitialStarPlacement(
@@ -6736,7 +6736,7 @@ const List<LevelDefinition> levelsFrom101To150 = [
       StarType.frozenStar,
     ],
     randomSeed: 18769,
-    objective: LevelObjective.scoreTarget(12000),
+    objective: LevelObjective.scoreTarget(120000),
     initialStars: [
       // Row 0: full normal
       InitialStarPlacement(
@@ -7946,7 +7946,7 @@ const List<LevelDefinition> levelsFrom101To150 = [
       StarType.frozenStar,
     ],
     randomSeed: 19591,
-    objective: LevelObjective.scoreTarget(12000),
+    objective: LevelObjective.scoreTarget(120000),
     initialStars: [
       // Row 0: full normal
       InitialStarPlacement(

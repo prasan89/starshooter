@@ -30,7 +30,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
     failureBoundaryRow: 10,
     availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
     randomSeed: 6987,
-    objective: LevelObjective.scoreTarget(2500),
+    objective: LevelObjective.scoreTarget(25000),
     initialStars: [
       // Row 0 — full
       InitialStarPlacement(
@@ -807,7 +807,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
     failureBoundaryRow: 10,
     availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
     randomSeed: 7809,
-    objective: LevelObjective.scoreTarget(3100),
+    objective: LevelObjective.scoreTarget(31000),
     initialStars: [
       // Row 0 — full with rainbows
       InitialStarPlacement(
@@ -1209,7 +1209,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
     failureBoundaryRow: 10,
     availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
     randomSeed: 8220,
-    objective: LevelObjective.scoreTarget(3500),
+    objective: LevelObjective.scoreTarget(35000),
     initialStars: [
       // Row 0 — dense with all types
       InitialStarPlacement(
@@ -1620,7 +1620,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
     failureBoundaryRow: 10,
     availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
     randomSeed: 8631,
-    objective: LevelObjective.scoreTarget(3800),
+    objective: LevelObjective.scoreTarget(38000),
     initialStars: [
       // Dense block rows 0-3
       InitialStarPlacement(
@@ -2056,7 +2056,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
     failureBoundaryRow: 10,
     availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
     randomSeed: 9042,
-    objective: LevelObjective.scoreTarget(4100),
+    objective: LevelObjective.scoreTarget(41000),
     initialStars: [
       // Cross pattern
       // Horizontal bar (row 2, all cols)
@@ -2486,7 +2486,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
     failureBoundaryRow: 10,
     availableStarTypes: [StarType.normal, StarType.meteor, StarType.rainbow],
     randomSeed: 9453,
-    objective: LevelObjective.scoreTarget(4400),
+    objective: LevelObjective.scoreTarget(44000),
     initialStars: [
       // Diagonal bands
       InitialStarPlacement(
@@ -2933,7 +2933,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.supernova,
     ],
     randomSeed: 9864,
-    objective: LevelObjective.scoreTarget(4700),
+    objective: LevelObjective.scoreTarget(47000),
     initialStars: [
       InitialStarPlacement(
         position: GridPosition(0, 0),
@@ -3346,7 +3346,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 10275,
-    objective: LevelObjective.scoreTarget(5000),
+    objective: LevelObjective.scoreTarget(50000),
     initialStars: [
       // Supernova cluster in center rows
       InitialStarPlacement(
@@ -3631,7 +3631,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 10549,
-    objective: LevelObjective.scoreTarget(5200),
+    objective: LevelObjective.scoreTarget(52000),
     initialStars: [
       // Dense block with scattered specials
       InitialStarPlacement(
@@ -4294,7 +4294,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 11097,
-    objective: LevelObjective.scoreTarget(5500),
+    objective: LevelObjective.scoreTarget(55000),
     initialStars: [
       // Solar Winds intro — medium density
       InitialStarPlacement(
@@ -4851,7 +4851,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 11645,
-    objective: LevelObjective.scoreTarget(5900),
+    objective: LevelObjective.scoreTarget(59000),
     initialStars: [
       InitialStarPlacement(
         position: GridPosition(0, 0),
@@ -5315,7 +5315,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 12056,
-    objective: LevelObjective.scoreTarget(6100),
+    objective: LevelObjective.scoreTarget(61000),
     initialStars: [
       // Full rows 0-2 + partial rows 3-4
       InitialStarPlacement(
@@ -5951,7 +5951,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 12604,
-    objective: LevelObjective.scoreTarget(6400),
+    objective: LevelObjective.scoreTarget(64000),
     initialStars: [
       InitialStarPlacement(
         position: GridPosition(0, 0),
@@ -6572,7 +6572,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 13152,
-    objective: LevelObjective.scoreTarget(6500),
+    objective: LevelObjective.scoreTarget(65000),
     initialStars: [
       InitialStarPlacement(
         position: GridPosition(0, 0),
@@ -7073,7 +7073,7 @@ const List<LevelDefinition> levelsFrom51To100 = [
       StarType.blackHole,
     ],
     randomSeed: 13563,
-    objective: LevelObjective.scoreTarget(6500),
+    objective: LevelObjective.scoreTarget(65000),
     initialStars: [
       // Spiral shape with dense specials
       InitialStarPlacement(
