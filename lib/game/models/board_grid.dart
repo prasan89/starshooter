@@ -168,6 +168,13 @@ class BoardGrid {
   /// Milestone 3.
   List<GridPosition> findMatches() => [];
 
+  // ── Frozen star queries ───────────────────────────────────────────────────
+
+  /// Returns all positions occupied by [StarType.frozenStar] stars that are
+  /// still frozen (i.e. [StarModel.isFrozen] is `true`).
+  List<GridPosition> get frozenPositions =>
+      occupiedPositions.where((p) => _stars[p]!.isFrozen).toList();
+
   // ── Factory: initial level board ──────────────────────────────────────────
 
   /// Builds the starting board for level 1 by populating the top [rows] rows
@@ -184,5 +191,27 @@ class BoardGrid {
       }
     }
     return current;
+  }
+
+  /// Builds a board from an explicit list of `(GridPosition, StarType)` pairs.
+  ///
+  /// Useful for constructing levels that contain special stars (frozen, meteor,
+  /// rainbow, etc.).  For each placement, [StarModel.create] is called with
+  /// [frozenHitsRemaining] pre-set to `2` when the type is
+  /// [StarType.frozenStar], and `0` otherwise.
+  static BoardGrid withPlacements(
+    List<(GridPosition, StarType)> placements, {
+    BoardConfig? config,
+  }) {
+    var grid = BoardGrid(config: config);
+    for (final (pos, type) in placements) {
+      final star = StarModel.create(
+        type: type,
+        gridPosition: pos,
+        frozenHitsRemaining: type == StarType.frozenStar ? 2 : 0,
+      );
+      grid = grid.placeStar(star, pos);
+    }
+    return grid;
   }
 }

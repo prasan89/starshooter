@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:star_shooter/game/models/shooter_game_state.dart';
 import 'package:star_shooter/game/models/star_type.dart';
+import 'package:star_shooter/game/special/special_star_spawner.dart';
 
 /// Manages the turn state machine for Star Shooter.
 ///
@@ -21,6 +22,9 @@ class TurnSystem with ChangeNotifier {
   /// Seeded random for deterministic star-type generation across runs.
   final Random _random = Random(42);
 
+  /// Optional spawner that controls star-type selection when set.
+  SpecialStarSpawner? _spawner;
+
   // ── Getters ────────────────────────────────────────────────────────────────
 
   ShooterGameState get state => _state;
@@ -36,7 +40,11 @@ class TurnSystem with ChangeNotifier {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   /// Resets the turn system for a new level with [moves] remaining shots.
-  void initialize(int moves) {
+  ///
+  /// An optional [spawner] may be supplied to drive weighted star-type
+  /// selection; without one the system falls back to [StarType.normal].
+  void initialize(int moves, {SpecialStarSpawner? spawner}) {
+    _spawner = spawner;
     _movesRemaining = moves;
     _currentStarType = StarType.normal;
     _nextStarType = StarType.normal;
@@ -105,11 +113,11 @@ class TurnSystem with ChangeNotifier {
 
   /// Returns the star type for the next shot.
   ///
-  /// M2 only spawns [StarType.normal] stars; the [_random] field and this
-  /// method are structured so that special types can be added in M3 simply by
-  /// extending the switch/case.
+  /// Delegates to [_spawner] when one is set; otherwise falls back to
+  /// [StarType.normal] (original M2 behaviour).
   StarType _randomStarType() {
-    // ignore: unused_local_variable — kept for future weighted random draws.
+    if (_spawner != null) return _spawner!.nextType();
+    // ignore: unused_local_variable — kept for parity with seeded RNG usage.
     final _ = _random.nextDouble();
     return StarType.normal;
   }

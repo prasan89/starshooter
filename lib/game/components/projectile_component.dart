@@ -143,6 +143,11 @@ class ProjectileComponent extends PositionComponent
           game.screenEffects.onCascade(result.comboLevel, _model.type.color);
         }
       }
+      if (result.specialEffectTargets.isNotEmpty) {
+        game.audioService.playCascade(); // reuse cascade sfx for specials
+        game.hapticService.onCascade();
+        game.screenEffects.onCascade(2, _model.type.color);
+      }
     }
 
     // Apply scoring result
@@ -172,6 +177,7 @@ class ProjectileComponent extends PositionComponent
     if (!gm.boardCleared && gm.state == GameState.playing) {
       gm.advanceTurn(gm.nextStarType, StarType.normal);
       game.shooter.loadStars(gm.currentStarType, gm.nextStarType);
+      game.trajectory.setTintColor(gm.currentStarType.color);
       gm.updateShooterState(ShooterGameState.ready);
     }
   }

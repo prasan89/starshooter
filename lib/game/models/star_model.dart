@@ -10,12 +10,20 @@ class StarModel {
   final StarState state;
   final double collisionRadius;
 
+  /// Remaining hits needed to thaw this star.
+  ///
+  /// Always `0` for non-frozen stars.  For [StarType.frozenStar] this starts
+  /// at [SpecialStarConfig.frozenThawHits] and decrements with each adjacent
+  /// match; the star is fully thawed when it reaches `0`.
+  final int frozenHitsRemaining;
+
   const StarModel({
     required this.id,
     required this.type,
     required this.gridPosition,
     required this.state,
     this.collisionRadius = 20.0,
+    this.frozenHitsRemaining = 0,
   });
 
   // ── ID generation ────────────────────────────────────────────────────────
@@ -30,12 +38,14 @@ class StarModel {
   factory StarModel.create({
     required StarType type,
     required GridPosition gridPosition,
+    int frozenHitsRemaining = 0,
   }) =>
       StarModel(
         id: _nextId(),
         type: type,
         gridPosition: gridPosition,
         state: StarState.idle,
+        frozenHitsRemaining: frozenHitsRemaining,
       );
 
   /// Creates a star that has just been loaded into the launcher.
@@ -44,6 +54,7 @@ class StarModel {
         type: type,
         gridPosition: GridPosition.invalid(),
         state: StarState.projectile,
+        frozenHitsRemaining: 0,
       );
 
   // ── Mutation helpers ──────────────────────────────────────────────────────
@@ -55,6 +66,7 @@ class StarModel {
     GridPosition? gridPosition,
     StarState? state,
     double? collisionRadius,
+    int? frozenHitsRemaining,
   }) =>
       StarModel(
         id: id ?? this.id,
@@ -62,7 +74,17 @@ class StarModel {
         gridPosition: gridPosition ?? this.gridPosition,
         state: state ?? this.state,
         collisionRadius: collisionRadius ?? this.collisionRadius,
+        frozenHitsRemaining: frozenHitsRemaining ?? this.frozenHitsRemaining,
       );
+
+  // ── Frozen star helpers ───────────────────────────────────────────────────
+
+  /// `true` when this is a [StarType.frozenStar] that still needs more hits.
+  bool get isFrozen => type == StarType.frozenStar && frozenHitsRemaining > 0;
+
+  /// `true` when this is a [StarType.frozenStar] whose hit count has
+  /// reached zero — i.e. it has been thawed and can now be matched normally.
+  bool get isThawed => type == StarType.frozenStar && frozenHitsRemaining <= 0;
 
   // ── Equality (identity is the id) ─────────────────────────────────────────
 

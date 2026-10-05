@@ -40,8 +40,7 @@ void main() {
         // Back-navigation target
         GoRoute(
           path: '/home',
-          builder: (_, __) =>
-              const Scaffold(body: Center(child: Text('Home'))),
+          builder: (_, __) => const Scaffold(body: Center(child: Text('Home'))),
         ),
       ],
     );

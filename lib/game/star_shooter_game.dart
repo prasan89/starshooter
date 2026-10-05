@@ -15,6 +15,14 @@ import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
 import 'package:star_shooter/game/services/audio_service.dart';
 import 'package:star_shooter/game/services/haptic_service.dart';
+import 'package:star_shooter/game/special/black_hole_effect.dart';
+import 'package:star_shooter/game/special/frozen_star_effect.dart';
+import 'package:star_shooter/game/special/meteor_effect.dart';
+import 'package:star_shooter/game/special/rainbow_effect.dart';
+import 'package:star_shooter/game/special/special_star_config.dart';
+import 'package:star_shooter/game/special/special_star_effect.dart';
+import 'package:star_shooter/game/special/special_star_spawner.dart';
+import 'package:star_shooter/game/special/supernova_effect.dart';
 import 'package:star_shooter/game/systems/turn_system.dart';
 
 /// The root Flame game class for Star Shooter.
@@ -55,6 +63,14 @@ class StarShooterGame extends FlameGame
   Future<void> onLoad() async {
     await super.onLoad();
 
+    // Register all special star effects before any board resolution runs.
+    SpecialStarRegistry.register(MeteorEffect());
+    SpecialStarRegistry.register(RainbowEffect());
+    SpecialStarRegistry.register(SupernovaEffect());
+    SpecialStarRegistry.register(BlackHoleEffect());
+    SpecialStarRegistry.register(FrozenStarEffect());
+    SpecialStarRegistry.registerDefaults();
+
     // Fix the camera anchor to the top-left so (0,0) is the top-left corner.
     camera.viewfinder.anchor = Anchor.topLeft;
 
@@ -64,6 +80,8 @@ class StarShooterGame extends FlameGame
     _currentLevelDef = LevelDefinition.forLevel(1);
     _board = GameBoardComponent(levelDef: _currentLevelDef);
     await add(_board);
+
+    _board.setSpecialConfig(SpecialStarConfig.standard);
 
     _shooter = ShooterComponent();
     await add(_shooter);
@@ -76,10 +94,19 @@ class StarShooterGame extends FlameGame
     await add(_screenEffects);
 
     // Initialise subsystems.
-    turnSystem.initialize(20);
-    gameManager.initLevel(1);
+    final spawner = SpecialStarSpawner(
+      levelId: _currentLevelDef!.id,
+      seed: _currentLevelDef!.randomSeed,
+      allowedTypes: _currentLevelDef!.availableStarTypes,
+    );
+    turnSystem.initialize(_currentLevelDef!.moveLimit, spawner: spawner);
+    gameManager.initLevel(_currentLevelDef!.id,
+        moves: _currentLevelDef!.moveLimit,);
 
     await audioService.initialize();
+
+    // Sync trajectory tint to the initial star type.
+    _trajectory.setTintColor(gameManager.currentStarType.color);
   }
 
   // ── Pause / resume ──────────────────────────────────────────────────────────
@@ -158,9 +185,17 @@ class StarShooterGame extends FlameGame
     add(projectile);
     gameManager.onShot();
     turnSystem.shoot();
+    _trajectory.setTintColor(gameManager.currentStarType.color);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  /// Updates the trajectory tint and shooter display when the star type changes.
+  // ignore: unused_element
+  void _onStarTypeChanged() {
+    _trajectory.setTintColor(gameManager.currentStarType.color);
+    _shooter.loadStars(gameManager.currentStarType, gameManager.nextStarType);
+  }
 
   /// Computes a clamped aim direction from the launcher centre toward [touch].
   ///

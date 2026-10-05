@@ -22,6 +22,7 @@ abstract final class MatchDetector {
   ) {
     final seedStar = board.starAt(seedPos);
     if (seedStar == null) return [];
+    if (seedStar.isFrozen) return []; // frozen stars are obstacles
 
     final group = _floodFill(board, seedPos, seedStar.type);
     if (group.length >= 3) return [group];
@@ -45,7 +46,7 @@ abstract final class MatchDetector {
       for (final neighbor in board.neighborsOf(current)) {
         if (visited.contains(neighbor)) continue;
         final star = board.starAt(neighbor);
-        if (star != null && star.type == type) {
+        if (star != null && star.type == type && !star.isFrozen) {
           visited.add(neighbor);
           queue.add(neighbor);
         }

@@ -13,6 +13,7 @@ import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
 import 'package:star_shooter/game/services/board_resolver.dart';
+import 'package:star_shooter/game/special/special_star_config.dart';
 import 'package:star_shooter/game/star_shooter_game.dart';
 
 /// The real game-board Flame component for Star Shooter.
@@ -30,6 +31,7 @@ class GameBoardComponent extends PositionComponent
   final List<StarComponent> _starComponents = [];
   Rect _boardRect = Rect.zero;
   final Random _rng = Random();
+  SpecialStarConfig _specialConfig = SpecialStarConfig.standard;
 
   GameBoardComponent({LevelDefinition? levelDef})
       : _grid =
@@ -171,6 +173,25 @@ class GameBoardComponent extends PositionComponent
         ),
       );
     }
+    // Special effect targets — larger burst + different particle config
+    for (final pos in result.specialEffectTargets) {
+      final pixel = _grid.gridToPixel(pos, _boardRect);
+      final star = _grid.starAt(pos);
+      if (star != null) {
+        // Determine particle config by the special type that was activated
+        // (we don't know which type caused it here, use cascade config as default)
+        final config = _particleConfigForSpecial(pos);
+        game.add(ParticleEmitterComponent(
+          position: Vector2(pixel.dx, pixel.dy),
+          color: star.type.color,
+          config: config,
+        ),);
+        game.add(PopAnimationComponent(
+          position: Vector2(pixel.dx, pixel.dy),
+          color: star.type.color,
+        ),);
+      }
+    }
     // Update grid to final resolved state.
     _grid = result.finalBoard;
     await _syncStarsToBoard();
@@ -212,13 +233,21 @@ class GameBoardComponent extends PositionComponent
       if (bestPos == null) return null;
       final placed = star.copyWith(gridPosition: bestPos);
       _grid = _grid.placeStar(placed, bestPos);
-      final result = BoardResolver.resolve(board: _grid, placedPos: bestPos);
+      final result = BoardResolver.resolve(
+        board: _grid,
+        placedPos: bestPos,
+        specialConfig: _specialConfig,
+      );
       await _applyResolution(result, bestPos);
       return result;
     }
     final placed = star.copyWith(gridPosition: gridPos);
     _grid = _grid.placeStar(placed, gridPos);
-    final result = BoardResolver.resolve(board: _grid, placedPos: gridPos);
+    final result = BoardResolver.resolve(
+      board: _grid,
+      placedPos: gridPos,
+      specialConfig: _specialConfig,
+    );
     await _applyResolution(result, gridPos);
     return result;
   }
@@ -228,8 +257,24 @@ class GameBoardComponent extends PositionComponent
     return _grid.occupiedPositions.any((pos) => pos.row >= boundaryRow);
   }
 
+  /// Updates the [SpecialStarConfig] used for board resolution.
+  void setSpecialConfig(SpecialStarConfig config) {
+    _specialConfig = config;
+  }
+
   BoardGrid get grid => _grid;
   Rect get boardRect => _boardRect;
+
+  // ── Internal helpers ───────────────────────────────────────────────────────
+
+  /// Returns the [ParticleConfig] to use for a special-effect target position.
+  ///
+  /// Uses [ParticleConfig.cascade] as the default for all special targets since
+  /// the resolver does not report which effect type triggered the removal.
+  ParticleConfig _particleConfigForSpecial(GridPosition pos) {
+    // Use cascade config as a default for special targets
+    return ParticleConfig.cascade;
+  }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

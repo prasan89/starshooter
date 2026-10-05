@@ -54,13 +54,20 @@ class LevelDefinition {
   /// * 20-move limit
   /// * 250-point score target
   factory LevelDefinition.forLevel(int levelId) {
+    final types = [StarType.normal];
+    if (levelId >= 11) types.add(StarType.meteor);
+    if (levelId >= 21) types.add(StarType.rainbow);
+    if (levelId >= 31) types.add(StarType.supernova);
+    if (levelId >= 41) types.add(StarType.blackHole);
+    if (levelId >= 51) types.add(StarType.frozenStar);
+
     return LevelDefinition(
       id: levelId,
       displayName: 'Level $levelId',
       moveLimit: 20,
       scoreTarget: 250,
       failureBoundaryRow: 10,
-      availableStarTypes: const [StarType.normal],
+      availableStarTypes: List.unmodifiable(types),
       randomSeed: levelId * 137, // deterministic per level
     );
   }
