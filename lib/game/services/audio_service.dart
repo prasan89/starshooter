@@ -1,9 +1,13 @@
 import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Wraps FlameAudio with graceful no-op fallbacks for missing assets.
 ///
 /// Real .ogg files are added in M6; until then every play call silently
 /// no-ops via try/catch so the rest of the game runs without errors.
+/// On web (kIsWeb) all audio is disabled entirely — web audio requires
+/// user interaction before the AudioContext can start, and OGG assets
+/// are not bundled yet, so every call would error.
 class AudioService {
   bool _musicEnabled = true;
   bool _sfxEnabled = true;
@@ -25,9 +29,8 @@ class AudioService {
   static const String _sfxDrop = 'audio/sfx_drop.ogg';
 
   Future<void> initialize() async {
+    if (kIsWeb) return; // No audio on web — OGG assets not bundled yet
     _initialized = true;
-    // Pre-cache would go here once real assets exist.
-    // FlameAudio.audioCache.loadAll([...]) — deferred to M6.
   }
 
   void setMusicEnabled(bool enabled) {
@@ -40,39 +43,38 @@ class AudioService {
   }
 
   Future<void> playMusic() async {
-    if (!_initialized || !_musicEnabled) return;
+    if (kIsWeb || !_initialized || !_musicEnabled) return;
     try {
       await FlameAudio.bgm.play(_bgMusic, volume: 0.4);
-    } catch (_) {
-      // Asset not yet present — silent fallback.
-    }
+    } catch (_) {}
   }
 
   void stopMusic() {
+    if (kIsWeb) return;
     try {
       FlameAudio.bgm.stop().catchError((_) {});
     } catch (_) {}
   }
 
   void pauseMusic() {
+    if (kIsWeb) return;
     try {
       FlameAudio.bgm.pause().catchError((_) {});
     } catch (_) {}
   }
 
   void resumeMusic() {
+    if (kIsWeb) return;
     try {
       if (_musicEnabled) FlameAudio.bgm.resume().catchError((_) {});
     } catch (_) {}
   }
 
   Future<void> _playSfx(String asset, {double volume = 0.8}) async {
-    if (!_initialized || !_sfxEnabled) return;
+    if (kIsWeb || !_initialized || !_sfxEnabled) return;
     try {
       await FlameAudio.play(asset, volume: volume);
-    } catch (_) {
-      // Asset not yet present — silent fallback.
-    }
+    } catch (_) {}
   }
 
   void playShoot() => _playSfx(_sfxShoot, volume: 0.7);
@@ -86,6 +88,7 @@ class AudioService {
   void playLevelComplete() => _playSfx(_sfxLevelComplete, volume: 1.0);
 
   void dispose() {
+    if (kIsWeb) return;
     try {
       FlameAudio.bgm.dispose();
     } catch (_) {}

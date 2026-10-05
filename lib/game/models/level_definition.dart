@@ -145,12 +145,14 @@ class LevelDefinition {
     final rng = Random(randomSeed);
     for (final placement in initialStars) {
       final frozenHits = placement.type == StarType.frozenStar ? 2 : 0;
+      // Use explicit colorIndex if provided; otherwise draw from seeded rng.
+      final ci = placement.type == StarType.normal
+          ? (placement.colorIndex >= 0 ? placement.colorIndex : rng.nextInt(StarColor.values.length))
+          : 0;
       final star = StarModel.create(
         type: placement.type,
         gridPosition: placement.position,
-        colorIndex: placement.type == StarType.normal
-            ? rng.nextInt(StarColor.values.length)
-            : 0,
+        colorIndex: ci,
         frozenHitsRemaining: frozenHits,
       );
       grid = grid.placeStar(star, placement.position);
@@ -170,6 +172,13 @@ class LevelDefinition {
 class InitialStarPlacement {
   final GridPosition position;
   final StarType type;
+  /// Explicit color index for [StarType.normal] stars (0–4).
+  /// When -1 (default) the color is assigned from the level's [randomSeed].
+  final int colorIndex;
 
-  const InitialStarPlacement({required this.position, required this.type});
+  const InitialStarPlacement({
+    required this.position,
+    required this.type,
+    this.colorIndex = -1,
+  });
 }

@@ -238,8 +238,7 @@ class GameBoardComponent extends PositionComponent
   /// Places [star] at the exact [gridPos] (already snapped by collision system).
   ///
   /// If [gridPos] is occupied or invalid, falls back to the nearest free
-  /// neighbour — same logic as [placeProjectile] but skips the pixel→grid
-  /// conversion to avoid positional drift after the component is removed.
+  /// hex-grid neighbour so the placed star stays connected to the cluster.
   Future<ResolutionResult?> placeProjectileAtGridPos(
     StarModel star,
     GridPosition gridPos,
@@ -247,22 +246,26 @@ class GameBoardComponent extends PositionComponent
     GridPosition targetPos = gridPos;
 
     if (!_grid.isValidPosition(targetPos) || _grid.isOccupied(targetPos)) {
+      // Use actual hex neighbours (not a square search) so the star stays
+      // adjacent to an existing cluster cell.
+      final neighbors = _grid.neighborsOf(targetPos);
       GridPosition? bestPos;
       double bestDist = double.infinity;
-      final centerPixel = _grid.gridToPixel(targetPos, _boardRect);
-      for (int dr = -1; dr <= 1; dr++) {
-        for (int dc = -1; dc <= 1; dc++) {
-          if (dr == 0 && dc == 0) continue;
-          final candidate = GridPosition(targetPos.row + dr, targetPos.col + dc);
-          if (_grid.isValidPosition(candidate) && !_grid.isOccupied(candidate)) {
-            final pixel = _grid.gridToPixel(candidate, _boardRect);
-            final dx = centerPixel.dx - pixel.dx;
-            final dy = centerPixel.dy - pixel.dy;
-            final d = dx * dx + dy * dy;
-            if (d < bestDist) {
-              bestDist = d;
-              bestPos = candidate;
-            }
+      final centerPixel = _grid.isValidPosition(targetPos)
+          ? _grid.gridToPixel(targetPos, _boardRect)
+          : Offset(
+              _boardRect.left + targetPos.col * _grid.config.cellWidth,
+              _boardRect.top + targetPos.row * _grid.config.cellHeight,
+            );
+      for (final candidate in neighbors) {
+        if (_grid.isValidPosition(candidate) && !_grid.isOccupied(candidate)) {
+          final pixel = _grid.gridToPixel(candidate, _boardRect);
+          final dx = centerPixel.dx - pixel.dx;
+          final dy = centerPixel.dy - pixel.dy;
+          final d = dx * dx + dy * dy;
+          if (d < bestDist) {
+            bestDist = d;
+            bestPos = candidate;
           }
         }
       }

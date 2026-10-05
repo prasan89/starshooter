@@ -43,114 +43,35 @@ class LevelCatalog {
       randomSeed: 137,
       objective: LevelObjective.scoreTarget(300),
       initialStars: [
-        InitialStarPlacement(
-          position: GridPosition(0, 0),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 1),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 2),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 3),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 4),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 5),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 6),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 7),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(0, 8),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 0),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 1),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 2),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 3),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 4),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 5),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 6),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 7),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(1, 8),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 0),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 1),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 2),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 3),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 4),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 5),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 6),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 7),
-          type: StarType.normal,
-        ),
-        InitialStarPlacement(
-          position: GridPosition(2, 8),
-          type: StarType.normal,
-        ),
+        // Row 0 — balanced colors, max group size 1
+        InitialStarPlacement(position: GridPosition(0, 0), type: StarType.normal, colorIndex: 2),
+        InitialStarPlacement(position: GridPosition(0, 1), type: StarType.normal, colorIndex: 3),
+        InitialStarPlacement(position: GridPosition(0, 2), type: StarType.normal, colorIndex: 0),
+        InitialStarPlacement(position: GridPosition(0, 3), type: StarType.normal, colorIndex: 2),
+        InitialStarPlacement(position: GridPosition(0, 4), type: StarType.normal, colorIndex: 1),
+        InitialStarPlacement(position: GridPosition(0, 5), type: StarType.normal, colorIndex: 0),
+        InitialStarPlacement(position: GridPosition(0, 6), type: StarType.normal, colorIndex: 4),
+        InitialStarPlacement(position: GridPosition(0, 7), type: StarType.normal, colorIndex: 1),
+        InitialStarPlacement(position: GridPosition(0, 8), type: StarType.normal, colorIndex: 3),
+        // Row 1 (odd — 8 cols, offset right)
+        InitialStarPlacement(position: GridPosition(1, 0), type: StarType.normal, colorIndex: 1),
+        InitialStarPlacement(position: GridPosition(1, 1), type: StarType.normal, colorIndex: 4),
+        InitialStarPlacement(position: GridPosition(1, 2), type: StarType.normal, colorIndex: 2),
+        InitialStarPlacement(position: GridPosition(1, 3), type: StarType.normal, colorIndex: 0),
+        InitialStarPlacement(position: GridPosition(1, 4), type: StarType.normal, colorIndex: 3),
+        InitialStarPlacement(position: GridPosition(1, 5), type: StarType.normal, colorIndex: 1),
+        InitialStarPlacement(position: GridPosition(1, 6), type: StarType.normal, colorIndex: 0),
+        InitialStarPlacement(position: GridPosition(1, 7), type: StarType.normal, colorIndex: 4),
+        // Row 2
+        InitialStarPlacement(position: GridPosition(2, 0), type: StarType.normal, colorIndex: 3),
+        InitialStarPlacement(position: GridPosition(2, 1), type: StarType.normal, colorIndex: 0),
+        InitialStarPlacement(position: GridPosition(2, 2), type: StarType.normal, colorIndex: 2),
+        InitialStarPlacement(position: GridPosition(2, 3), type: StarType.normal, colorIndex: 4),
+        InitialStarPlacement(position: GridPosition(2, 4), type: StarType.normal, colorIndex: 0),
+        InitialStarPlacement(position: GridPosition(2, 5), type: StarType.normal, colorIndex: 3),
+        InitialStarPlacement(position: GridPosition(2, 6), type: StarType.normal, colorIndex: 2),
+        InitialStarPlacement(position: GridPosition(2, 7), type: StarType.normal, colorIndex: 1),
+        InitialStarPlacement(position: GridPosition(2, 8), type: StarType.normal, colorIndex: 4),
       ],
     ),
 
