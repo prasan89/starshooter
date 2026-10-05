@@ -7,6 +7,7 @@ import 'package:star_shooter/core/theme/app_spacing.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
 import 'package:star_shooter/core/widgets/cosmic_button.dart';
 import 'package:star_shooter/core/widgets/cosmic_card.dart';
+import 'package:star_shooter/domain/usecases/get_attempts_usecase.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
 
 /// Main home / lobby screen.
@@ -21,12 +22,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  AttemptInfo? _attemptInfo;
+  bool _attemptsLoading = true;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GalaxyMapNotifier>().load();
+      _loadAttempts();
     });
+  }
+
+  Future<void> _loadAttempts() async {
+    final info = await context.read<GetAttemptsUseCase>().call();
+    if (mounted) {
+      setState(() {
+        _attemptInfo = info;
+        _attemptsLoading = false;
+      });
+    }
   }
 
   @override
@@ -146,6 +161,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () => context.push(AppRoutes.galaxyMap),
                   ),
                 ),
+
+                const SizedBox(height: AppSpacing.sm),
+
+                // ── Attempt indicator ─────────────────────────────────────
+                if (_attemptsLoading)
+                  const SizedBox(height: 12)
+                else if (_attemptInfo != null)
+                  _AttemptIndicator(info: _attemptInfo!),
 
                 const SizedBox(height: AppSpacing.xl),
 
@@ -338,6 +361,67 @@ class _Divider extends StatelessWidget {
         color: AppColors.shimmerBase,
         width: 1,
         thickness: 1,
+      ),
+    );
+  }
+}
+
+class _AttemptIndicator extends StatelessWidget {
+  const _AttemptIndicator({required this.info});
+  final AttemptInfo info;
+
+  @override
+  Widget build(BuildContext context) {
+    if (info.isPremium) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.bolt_rounded,
+              color: AppColors.starFilled,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'PREMIUM · UNLIMITED PLAYS',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.starFilled,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final remaining = info.attemptsRemaining;
+    final total = info.dailyLimit;
+    final color = remaining > 0 ? AppColors.textSecondary : AppColors.error;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ...List.generate(
+            total,
+            (i) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Icon(
+                Icons.bolt_rounded,
+                size: 14,
+                color: i < remaining
+                    ? AppColors.starFilled
+                    : AppColors.textDisabled,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$remaining / $total',
+            style: AppTextStyles.bodySmall.copyWith(color: color),
+          ),
+        ],
       ),
     );
   }

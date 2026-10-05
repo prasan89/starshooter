@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:star_shooter/core/navigation/app_routes.dart';
+import 'package:star_shooter/core/theme/app_colors.dart';
+import 'package:star_shooter/domain/config/daily_attempt_config.dart';
 import 'package:star_shooter/domain/models/game_session.dart';
 import 'package:star_shooter/domain/models/level_progress.dart';
 import 'package:star_shooter/domain/repositories/level_repository.dart';
 import 'package:star_shooter/domain/repositories/player_repository.dart';
 import 'package:star_shooter/domain/usecases/complete_level_usecase.dart';
+import 'package:star_shooter/domain/usecases/start_level_usecase.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
+import 'package:star_shooter/features/gameplay/screens/daily_limit_screen.dart';
 import 'package:star_shooter/features/gameplay/screens/failure_screen.dart';
 import 'package:star_shooter/features/gameplay/screens/victory_screen.dart';
 import 'package:star_shooter/features/gameplay/widgets/pause_overlay.dart';
@@ -41,6 +45,9 @@ class GameplayScreen extends StatefulWidget {
 class _GameplayScreenState extends State<GameplayScreen> {
   late StarShooterGame _game;
 
+  /// True once an attempt has been granted and the game is initialised.
+  bool _attemptGranted = false;
+
   /// Set to true the moment we start handling a terminal state so we never
   /// trigger the flow twice (e.g. two rapid notifications from GameManager).
   bool _completionHandled = false;
@@ -52,10 +59,39 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
-    _initGame();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndConsumeAttempt();
+    });
+  }
+
+  Future<void> _checkAndConsumeAttempt() async {
+    final useCase = context.read<StartLevelUseCase>();
+    final result = await useCase(levelId: widget.levelId);
+    if (!mounted) return;
+    if (result.isAllowed) {
+      _initGame();
+      setState(() {
+        _attemptGranted = true;
+      });
+    } else if (result.status == StartLevelStatus.dailyLimitReached) {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, anim, __) => FadeTransition(
+            opacity: anim,
+            child: DailyLimitScreen(
+              dailyLimit: DailyAttemptConfig.defaultConfig.freeDailyLimit,
+            ),
+          ),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    } else {
+      if (mounted) Navigator.of(context).pop();
+    }
   }
 
   /// Creates a fresh [StarShooterGame] and wires the listener.
+  /// Must only be called after the attempt is granted.
   void _initGame() {
     _game = StarShooterGame(levelId: widget.levelId);
     _game.gameManager.addListener(_onGameStateChanged);
@@ -65,8 +101,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   @override
   void dispose() {
-    _game.gameManager.removeListener(_onGameStateChanged);
-    _game.onRemove();
+    if (_attemptGranted) {
+      _game.gameManager.removeListener(_onGameStateChanged);
+      _game.onRemove();
+    }
     super.dispose();
   }
 
@@ -246,6 +284,14 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_attemptGranted) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
     return PopScope(
       // Intercept Android back — pause instead of popping.
       canPop: false,
