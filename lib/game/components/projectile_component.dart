@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:star_shooter/game/fx/shooting_trail_component.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/shooter_game_state.dart';
@@ -17,8 +18,10 @@ class ProjectileComponent extends PositionComponent
   final StarModel _model;
   Vector2 _velocity;
   bool _active = true;
+  double _trailTimer = 0.0;
 
   static const double _speed = 600.0; // pixels per second
+  static const double _trailInterval = 0.05; // seconds between trail puffs
 
   ProjectileComponent({
     required StarModel model,
@@ -40,6 +43,18 @@ class ProjectileComponent extends PositionComponent
   void update(double dt) {
     if (!_active) return;
     position += _velocity * dt;
+
+    // Spawn trail puffs at fixed intervals.
+    _trailTimer += dt;
+    if (_trailTimer >= _trailInterval) {
+      _trailTimer = 0;
+      game.add(
+        ShootingTrailComponent(
+          position: position.clone(),
+          color: _model.type.color,
+        ),
+      );
+    }
 
     final gs = game.size;
     final board = game.board;
@@ -110,10 +125,25 @@ class ProjectileComponent extends PositionComponent
     // Tell state machine: resolving
     gm.updateShooterState(ShooterGameState.resolving);
     ts.onProjectileLanded();
+    game.audioService.playImpact();
 
     // Run board resolution (includes match + gravity + cascade)
     final result =
         await board.placeProjectile(_model, Offset(position.x, position.y));
+
+    // Trigger audio / haptic / screen effects based on result
+    if (result != null) {
+      if (result.matchedGroups.isNotEmpty) {
+        game.audioService.playMatch();
+        game.hapticService.onMatch();
+        game.screenEffects.onMatch(_model.type.color);
+        if (result.comboLevel > 2) {
+          game.audioService.playCascade();
+          game.hapticService.onCascade();
+          game.screenEffects.onCascade(result.comboLevel, _model.type.color);
+        }
+      }
+    }
 
     // Apply scoring result
     if (result != null) {

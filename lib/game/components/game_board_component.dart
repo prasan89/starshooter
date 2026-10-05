@@ -1,8 +1,13 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:star_shooter/game/components/pop_animation_component.dart';
+import 'package:star_shooter/game/components/gravity_drop_component.dart';
 import 'package:star_shooter/game/components/star_component.dart';
+import 'package:star_shooter/game/fx/floating_score_component.dart';
+import 'package:star_shooter/game/fx/particle_config.dart';
+import 'package:star_shooter/game/fx/particle_emitter_component.dart';
 import 'package:star_shooter/game/models/board_grid.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
@@ -24,6 +29,7 @@ class GameBoardComponent extends PositionComponent
   BoardGrid _grid;
   final List<StarComponent> _starComponents = [];
   Rect _boardRect = Rect.zero;
+  final Random _rng = Random();
 
   GameBoardComponent({LevelDefinition? levelDef})
       : _grid =
@@ -97,32 +103,73 @@ class GameBoardComponent extends PositionComponent
   // ── Resolution ─────────────────────────────────────────────────────────────
 
   Future<void> _applyResolution(
-      ResolutionResult result, GridPosition placedPos,) async {
-    // Spawn pop animations for matched stars.
+    ResolutionResult result,
+    GridPosition placedPos,
+  ) async {
+    // Spawn pop animations and particle bursts for matched stars.
     for (final group in result.matchedGroups) {
       for (final pos in group) {
         final pixel = _grid.gridToPixel(pos, _boardRect);
         final star = _grid.starAt(pos);
         if (star != null) {
-          final anim = PopAnimationComponent(
-            position: Vector2(pixel.dx, pixel.dy),
-            color: star.type.color,
+          game.add(
+            PopAnimationComponent(
+              position: Vector2(pixel.dx, pixel.dy),
+              color: star.type.color,
+            ),
           );
-          game.add(anim);
+          final config = group.length >= 5
+              ? ParticleConfig.popLarge
+              : ParticleConfig.popSmall;
+          game.add(
+            ParticleEmitterComponent(
+              position: Vector2(pixel.dx, pixel.dy),
+              color: star.type.color,
+              config: config,
+            ),
+          );
         }
       }
+      // Spawn one floating score per group at the centroid.
+      if (group.isNotEmpty) {
+        var sumX = 0.0;
+        var sumY = 0.0;
+        for (final pos in group) {
+          final px = _grid.gridToPixel(pos, _boardRect);
+          sumX += px.dx;
+          sumY += px.dy;
+        }
+        final centroid = Vector2(sumX / group.length, sumY / group.length);
+        game.add(
+          FloatingScoreComponent(
+            position: centroid,
+            score: group.length * 50,
+            comboLevel: result.comboLevel,
+          ),
+        );
+      }
     }
-    // Spawn pop animations for floating stars.
+    // Spawn gravity-drop and particle burst for floating stars.
     for (final pos in result.floatingStars) {
       final pixel = _grid.gridToPixel(pos, _boardRect);
       final star = _grid.starAt(pos);
       if (star != null) {
-        final anim = PopAnimationComponent(
-          position: Vector2(pixel.dx, pixel.dy),
-          color: star.type.color,
+        final drift = (_rng.nextDouble() - 0.5) * 60.0;
+        game.add(
+          GravityDropComponent(
+            startPos: Vector2(pixel.dx, pixel.dy),
+            color: star.type.color,
+            horizontalDrift: drift,
+          ),
         );
-        game.add(anim);
       }
+      game.add(
+        ParticleEmitterComponent(
+          position: Vector2(pixel.dx, pixel.dy),
+          color: star?.type.color ?? const Color(0xFFFFBF00),
+          config: ParticleConfig.popSmall,
+        ),
+      );
     }
     // Update grid to final resolved state.
     _grid = result.finalBoard;
@@ -137,7 +184,9 @@ class GameBoardComponent extends PositionComponent
   /// pop animations). Returns the [ResolutionResult] or `null` if no valid cell
   /// was available.
   Future<ResolutionResult?> placeProjectile(
-      StarModel star, Offset pixelPos,) async {
+    StarModel star,
+    Offset pixelPos,
+  ) async {
     final gridPos = _grid.pixelToGrid(pixelPos, _boardRect);
     if (!_grid.isValidPosition(gridPos) || _grid.isOccupied(gridPos)) {
       // Try neighbours — find the closest valid unoccupied cell.

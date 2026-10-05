@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 import 'package:star_shooter/core/theme/app_theme.dart';
+import 'package:star_shooter/core/utils/result.dart';
+import 'package:star_shooter/domain/models/player_settings.dart';
 import 'package:star_shooter/features/settings/screens/settings_screen.dart';
 
+import 'package:star_shooter/domain/repositories/player_repository.dart';
+
+import '../../helpers/mock_repositories.dart';
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(PlayerSettings.defaults());
+  });
+
+  late MockPlayerRepository mockPlayerRepo;
+
+  setUp(() {
+    mockPlayerRepo = MockPlayerRepository();
+    when(() => mockPlayerRepo.getSettings()).thenAnswer(
+      (_) async => Result.success(PlayerSettings.defaults()),
+    );
+    when(() => mockPlayerRepo.saveSettings(any())).thenAnswer(
+      (_) async => Result.success(null),
+    );
+  });
+
   Widget buildSettingsApp() {
     final router = GoRouter(
       initialLocation: '/settings',
@@ -16,15 +40,19 @@ void main() {
         // Back-navigation target
         GoRoute(
           path: '/home',
-          builder: (_, __) => const Scaffold(body: Center(child: Text('Home'))),
+          builder: (_, __) =>
+              const Scaffold(body: Center(child: Text('Home'))),
         ),
       ],
     );
 
-    return MaterialApp.router(
-      routerConfig: router,
-      theme: AppTheme.dark,
-      debugShowCheckedModeBanner: false,
+    return Provider<PlayerRepository>.value(
+      value: mockPlayerRepo,
+      child: MaterialApp.router(
+        routerConfig: router,
+        theme: AppTheme.dark,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 

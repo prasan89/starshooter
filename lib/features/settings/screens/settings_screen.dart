@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:star_shooter/core/constants/app_constants.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/theme/app_spacing.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
 import 'package:star_shooter/core/widgets/cosmic_card.dart';
+import 'package:star_shooter/domain/models/player_settings.dart';
+import 'package:star_shooter/domain/repositories/player_repository.dart';
 
 /// Settings screen with toggles for audio and haptics.
 ///
-/// State is kept locally for now; a future iteration will use a Provider /
-/// repository that persists via [SharedPreferences].
+/// Loads persisted [PlayerSettings] on init and saves changes immediately via
+/// [PlayerRepository] so the game reads the correct values on next launch.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -21,6 +24,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _musicEnabled = true;
   bool _sfxEnabled = true;
   bool _hapticsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final repo = context.read<PlayerRepository>();
+    final result = await repo.getSettings();
+    result.when(
+      onSuccess: (settings) {
+        if (mounted) {
+          setState(() {
+            _musicEnabled = settings.musicEnabled;
+            _sfxEnabled = settings.sfxEnabled;
+            _hapticsEnabled = settings.hapticsEnabled;
+          });
+        }
+      },
+      onFailure: (_) {
+        // Fall back to defaults already set in the fields.
+      },
+    );
+  }
+
+  Future<void> _saveSettings() async {
+    final repo = context.read<PlayerRepository>();
+    final settings = PlayerSettings(
+      musicEnabled: _musicEnabled,
+      sfxEnabled: _sfxEnabled,
+      hapticsEnabled: _hapticsEnabled,
+    );
+    await repo.saveSettings(settings);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +88,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.music_note_rounded,
                     label: 'Music',
                     value: _musicEnabled,
-                    onChanged: (v) => setState(() => _musicEnabled = v),
+                    onChanged: (v) {
+                      setState(() => _musicEnabled = v);
+                      _saveSettings();
+                    },
                   ),
                   const Divider(
                     color: AppColors.shimmerBase,
@@ -62,7 +103,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.volume_up_rounded,
                     label: 'Sound Effects',
                     value: _sfxEnabled,
-                    onChanged: (v) => setState(() => _sfxEnabled = v),
+                    onChanged: (v) {
+                      setState(() => _sfxEnabled = v);
+                      _saveSettings();
+                    },
                   ),
                 ],
               ),
@@ -79,7 +123,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.vibration_rounded,
                 label: 'Vibration',
                 value: _hapticsEnabled,
-                onChanged: (v) => setState(() => _hapticsEnabled = v),
+                onChanged: (v) {
+                  setState(() => _hapticsEnabled = v);
+                  _saveSettings();
+                },
               ),
             ),
 

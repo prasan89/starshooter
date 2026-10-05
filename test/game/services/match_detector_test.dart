@@ -25,8 +25,7 @@ void main() {
     });
 
     test('returns empty for 2 connected stars', () {
-      final g =
-          buildGrid([(0, 0, StarType.normal), (0, 1, StarType.normal)]);
+      final g = buildGrid([(0, 0, StarType.normal), (0, 1, StarType.normal)]);
       expect(
         MatchDetector.findMatches(g, const GridPosition(0, 0)),
         isEmpty,

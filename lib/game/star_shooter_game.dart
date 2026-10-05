@@ -3,14 +3,18 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:star_shooter/domain/models/player_settings.dart';
 import 'package:star_shooter/game/components/aim_trajectory_component.dart';
 import 'package:star_shooter/game/components/cosmic_background_component.dart';
 import 'package:star_shooter/game/components/game_board_component.dart';
 import 'package:star_shooter/game/components/projectile_component.dart';
 import 'package:star_shooter/game/components/shooter_component.dart';
+import 'package:star_shooter/game/fx/screen_effects.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
+import 'package:star_shooter/game/services/audio_service.dart';
+import 'package:star_shooter/game/services/haptic_service.dart';
 import 'package:star_shooter/game/systems/turn_system.dart';
 
 /// The root Flame game class for Star Shooter.
@@ -23,12 +27,15 @@ class StarShooterGame extends FlameGame
   late GameBoardComponent _board;
   late ShooterComponent _shooter;
   late AimTrajectoryComponent _trajectory;
+  late ScreenEffectsComponent _screenEffects;
 
   Vector2 _aimDirection = Vector2(0, -1);
   bool _isDragging = false;
 
   final GameManager gameManager = GameManager();
   final TurnSystem turnSystem = TurnSystem();
+  final AudioService audioService = AudioService();
+  final HapticService hapticService = HapticService();
 
   LevelDefinition? _currentLevelDef;
 
@@ -37,7 +44,10 @@ class StarShooterGame extends FlameGame
   GameBoardComponent get board => _board;
   ShooterComponent get shooter => _shooter;
   AimTrajectoryComponent get trajectory => _trajectory;
+  ScreenEffectsComponent get screenEffects => _screenEffects;
   LevelDefinition? get currentLevelDef => _currentLevelDef;
+  AudioService get audio => audioService;
+  HapticService get haptic => hapticService;
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────
 
@@ -62,18 +72,38 @@ class StarShooterGame extends FlameGame
     _trajectory.priority = 3;
     await add(_trajectory);
 
+    _screenEffects = ScreenEffectsComponent();
+    await add(_screenEffects);
+
     // Initialise subsystems.
     turnSystem.initialize(20);
     gameManager.initLevel(1);
+
+    await audioService.initialize();
   }
 
   // ── Pause / resume ──────────────────────────────────────────────────────────
 
   /// Pauses the game loop and all component updates.
-  void pauseGame() => paused = true;
+  void pauseGame() {
+    paused = true;
+    audioService.pauseMusic();
+  }
 
   /// Resumes the game loop.
-  void resumeGame() => paused = false;
+  void resumeGame() {
+    paused = false;
+    audioService.resumeMusic();
+  }
+
+  // ── Settings ─────────────────────────────────────────────────────────────────
+
+  /// Applies [settings] to the audio and haptic services.
+  void applySettings(PlayerSettings settings) {
+    audioService.setMusicEnabled(settings.musicEnabled);
+    audioService.setSfxEnabled(settings.sfxEnabled);
+    hapticService.setEnabled(settings.hapticsEnabled);
+  }
 
   // ── Drag / aim input ────────────────────────────────────────────────────────
 
@@ -123,6 +153,8 @@ class StarShooterGame extends FlameGame
       direction: _aimDirection,
     );
     projectile.position = _shooter.launcherWorldCenter.clone();
+    audioService.playShoot();
+    hapticService.onShoot();
     add(projectile);
     gameManager.onShot();
     turnSystem.shoot();
