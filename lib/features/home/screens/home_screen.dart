@@ -7,6 +7,7 @@ import 'package:star_shooter/core/theme/app_spacing.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
 import 'package:star_shooter/core/widgets/cosmic_button.dart';
 import 'package:star_shooter/core/widgets/cosmic_card.dart';
+import 'package:star_shooter/data/billing/billing_notifier.dart';
 import 'package:star_shooter/domain/usecases/get_attempts_usecase.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
 
@@ -47,6 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<GalaxyMapNotifier>();
+    final billingNotifier = context.watch<BillingNotifier>();
+
+    // Reload attempts immediately when billing says premium but our cached
+    // info doesn't reflect it yet (e.g. right after a successful purchase).
+    if (billingNotifier.isPremium && (_attemptInfo?.isPremium != true)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadAttempts());
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,

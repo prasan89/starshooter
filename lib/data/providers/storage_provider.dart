@@ -3,13 +3,17 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:star_shooter/data/billing/billing_notifier.dart';
+import 'package:star_shooter/data/billing/play_billing_entitlement_repository.dart';
+import 'package:star_shooter/data/billing/play_billing_repository.dart';
 import 'package:star_shooter/data/local/local_storage.dart';
 import 'package:star_shooter/data/repositories/daily_attempt_repository_impl.dart';
 import 'package:star_shooter/data/repositories/entitlement_repository_impl.dart';
 import 'package:star_shooter/data/repositories/level_repository_impl.dart';
 import 'package:star_shooter/data/repositories/player_repository_impl.dart';
-import 'package:star_shooter/data/repositories/premium_entitlement_repository_impl.dart';
+import 'package:star_shooter/domain/config/billing_config.dart';
 import 'package:star_shooter/domain/config/daily_attempt_config.dart';
+import 'package:star_shooter/domain/repositories/billing_repository.dart';
 import 'package:star_shooter/domain/repositories/daily_attempt_repository.dart';
 import 'package:star_shooter/domain/repositories/entitlement_repository.dart';
 import 'package:star_shooter/domain/repositories/level_repository.dart';
@@ -84,8 +88,48 @@ Future<List<SingleChildWidget>> createDataProviders() async {
       ),
     ),
 
-    Provider<PremiumEntitlementRepository>(
-      create: (_) => const LocalPremiumEntitlementRepository(),
+    // ── M10: Billing ──────────────────────────────────────
+    Provider<BillingRepository>(
+      create: (_) {
+        final repo = PlayBillingRepository(storage: storage);
+        repo.initialize();
+        return repo;
+      },
+    ),
+
+    Provider<PlayBillingEntitlementRepository>(
+      create: (ctx) {
+        final repo = PlayBillingEntitlementRepository(
+          billingRepository: ctx.read<BillingRepository>(),
+          config: BillingConfig.defaultConfig,
+        );
+        repo.initializePurchaseListener();
+        // Kick off background refresh (non-blocking)
+        repo.refreshFromBilling();
+        return repo;
+      },
+    ),
+
+    // PremiumEntitlementRepository is now backed by billing
+    ProxyProvider<PlayBillingEntitlementRepository,
+        PremiumEntitlementRepository>(
+      update: (_, billingEntRepo, __) => billingEntRepo,
+    ),
+
+    ChangeNotifierProxyProvider2<BillingRepository,
+        PlayBillingEntitlementRepository, BillingNotifier>(
+      create: (ctx) => BillingNotifier(
+        billingRepository: ctx.read<BillingRepository>(),
+        entitlementRepository: ctx.read<PlayBillingEntitlementRepository>(),
+        config: BillingConfig.defaultConfig,
+      ),
+      update: (_, billingRepo, entRepo, previous) =>
+          previous ??
+          BillingNotifier(
+            billingRepository: billingRepo,
+            entitlementRepository: entRepo,
+            config: BillingConfig.defaultConfig,
+          ),
     ),
 
     ProxyProvider2<DailyAttemptRepository, PremiumEntitlementRepository,

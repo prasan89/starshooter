@@ -25,3 +25,19 @@ final class ValidationFailure extends Failure {
 final class NetworkFailure extends Failure {
   const NetworkFailure([super.message = 'A network error occurred.']);
 }
+
+final class BillingFailure extends Failure {
+  const BillingFailure([super.message = 'A billing error occurred.']);
+}
+
+final class ProductUnavailableFailure extends Failure {
+  const ProductUnavailableFailure([
+    super.message = 'Premium product is currently unavailable.',
+  ]);
+}
+
+final class PurchaseFailure extends Failure {
+  const PurchaseFailure([
+    super.message = 'The purchase could not be completed.',
+  ]);
+}
