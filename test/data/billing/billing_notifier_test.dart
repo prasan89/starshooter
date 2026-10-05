@@ -65,7 +65,9 @@ class FakeBillingRepository implements BillingRepository {
         PurchaseResult(status: PurchaseStatus.restored, productId: id),
       );
     }
-    return Result.success(const PurchaseResult(status: PurchaseStatus.cancelled));
+    return Result.success(
+      const PurchaseResult(status: PurchaseStatus.cancelled),
+    );
   }
 
   @override

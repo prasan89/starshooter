@@ -88,7 +88,7 @@ void main() {
     });
 
     test('consecutive days extend streak', () async {
-      streakRepo.state = StreakState(
+      streakRepo.state = const StreakState(
         currentStreak: 3,
         longestStreak: 3,
         lastCompletedDate: '2024-10-05',
@@ -106,7 +106,7 @@ void main() {
     });
 
     test('missing a day resets streak to 1', () async {
-      streakRepo.state = StreakState(
+      streakRepo.state = const StreakState(
         currentStreak: 5,
         longestStreak: 10,
         lastCompletedDate: '2024-10-03',
@@ -124,7 +124,7 @@ void main() {
     });
 
     test('same-day completion is idempotent', () async {
-      streakRepo.state = StreakState(
+      streakRepo.state = const StreakState(
         currentStreak: 3,
         longestStreak: 3,
         lastCompletedDate: '2024-10-05',
@@ -142,7 +142,7 @@ void main() {
     });
 
     test('totalDaysCompleted increments on genuine completion', () async {
-      streakRepo.state = StreakState(
+      streakRepo.state = const StreakState(
         currentStreak: 1,
         longestStreak: 1,
         lastCompletedDate: '2024-10-04',

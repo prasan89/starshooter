@@ -145,17 +145,17 @@ void main() {
       expect(r3.stars, 3);
     });
 
-    test('LevelCatalog.getLevelById returns null for level 51', () {
-      expect(LevelCatalog.getLevelById(51), isNull);
+    test('LevelCatalog.getLevelById returns null for level 201', () {
+      expect(LevelCatalog.getLevelById(201), isNull);
     });
 
-    test('Level 50 is the last level', () {
-      expect(LevelCatalog.getLevelById(50), isNotNull);
-      expect(LevelCatalog.getLevelById(51), isNull);
+    test('Level 200 is the last level', () {
+      expect(LevelCatalog.getLevelById(200), isNotNull);
+      expect(LevelCatalog.getLevelById(201), isNull);
     });
 
-    test('Next level exists for levels 1-49', () {
-      for (int i = 1; i <= 49; i++) {
+    test('Next level exists for levels 1-199', () {
+      for (int i = 1; i <= 199; i++) {
         expect(
           LevelCatalog.getLevelById(i + 1),
           isNotNull,

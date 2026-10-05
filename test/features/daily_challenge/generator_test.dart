@@ -24,7 +24,7 @@ void main() {
         final date = '2024-10-${day.toString().padLeft(2, '0')}';
         final ch = generator.generateForDate(date);
         expect(ch.levelId, greaterThanOrEqualTo(1));
-        expect(ch.levelId, lessThanOrEqualTo(50));
+        expect(ch.levelId, lessThanOrEqualTo(200));
         expect(ch.effectiveMoveLimit, greaterThanOrEqualTo(8));
         expect(ch.effectiveMoveLimit, lessThanOrEqualTo(60));
       }

@@ -1,17 +1,20 @@
+import 'package:star_shooter/game/level/level_catalog_101_150.dart';
+import 'package:star_shooter/game/level/level_catalog_151_200.dart';
+import 'package:star_shooter/game/level/level_catalog_51_100.dart';
 import 'package:star_shooter/game/level/level_objective.dart';
 import 'package:star_shooter/game/level/level_world_meta.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_type.dart';
 
-/// Static catalog of all 50 handcrafted levels.
+/// Static catalog of all 200 production levels.
 ///
-/// Levels are grouped into 5 worlds of 10 levels each:
-///   World 1 "Nebula Nursery"   — Levels  1–10  (intro, normal stars only)
-///   World 2 "Asteroid Fields"  — Levels 11–20  (meteor stars introduced)
-///   World 3 "Solar Winds"      — Levels 21–30  (rainbow + meteor stars)
-///   World 4 "Event Horizon"    — Levels 31–40  (supernova + blackHole)
-///   World 5 "Frozen Nebula"    — Levels 41–50  (frozenStar obstacles, all specials)
+/// World structure (M12 — 40 levels per world):
+///   World 1 "Nebula Nursery"   — Levels   1–40  (intro → advanced, all normal + specials introduced)
+///   World 2 "Asteroid Fields"  — Levels  41–80  (advanced, meteor + rainbow + supernova + blackHole)
+///   World 3 "Solar Winds"      — Levels  81–120 (hard → very hard, frozen stars introduced)
+///   World 4 "Event Horizon"    — Levels 121–160 (expert → master, dense frozen boards)
+///   World 5 "Frozen Nebula"    — Levels 161–200 (extreme endgame, maximum difficulty)
 class LevelCatalog {
   LevelCatalog._();
 
@@ -1396,9 +1399,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Meteor Shower',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 1,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 11,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 10,
       ),
@@ -1526,9 +1529,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Rock Storm',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 2,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 12,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 11,
       ),
@@ -1656,9 +1659,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Debris Field',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 3,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 13,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 12,
       ),
@@ -1786,9 +1789,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Comet Trail',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 4,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 14,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 13,
       ),
@@ -1916,9 +1919,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Impact Zone',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 5,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 15,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 14,
       ),
@@ -2062,9 +2065,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Shatter',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 6,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 16,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 15,
       ),
@@ -2192,9 +2195,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Pulsar',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 7,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 17,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 16,
       ),
@@ -2330,9 +2333,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Flux',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 8,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 18,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 17,
       ),
@@ -2484,9 +2487,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Deep Rock',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 9,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 19,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 18,
       ),
@@ -2610,9 +2613,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Asteroid King',
       worldMeta: LevelWorldMeta(
-        worldId: 2,
-        levelNumber: 10,
-        worldName: 'Asteroid Fields',
+        worldId: 1,
+        levelNumber: 20,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 19,
       ),
@@ -2761,9 +2764,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Rainbow Rush',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 1,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 21,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 20,
       ),
@@ -2887,9 +2890,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Spectrum',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 2,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 22,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 21,
       ),
@@ -3013,9 +3016,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Prism Storm',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 3,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 23,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 22,
       ),
@@ -3143,9 +3146,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Solar Flare',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 4,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 24,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 23,
       ),
@@ -3257,9 +3260,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Wind Dancer',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 5,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 25,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 24,
       ),
@@ -3387,9 +3390,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Refraction',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 6,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 26,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 25,
       ),
@@ -3509,9 +3512,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Chromatic',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 7,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 27,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 26,
       ),
@@ -3635,9 +3638,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Photon Burst',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 8,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 28,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 27,
       ),
@@ -3765,9 +3768,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Aurora',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 9,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 29,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 28,
       ),
@@ -3887,9 +3890,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Solar Crown',
       worldMeta: LevelWorldMeta(
-        worldId: 3,
-        levelNumber: 10,
-        worldName: 'Solar Winds',
+        worldId: 1,
+        levelNumber: 30,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 29,
       ),
@@ -4034,9 +4037,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Ignition',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 1,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 31,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 30,
       ),
@@ -4165,9 +4168,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Collapse',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 2,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 32,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 31,
       ),
@@ -4297,9 +4300,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Singularity',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 3,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 33,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 32,
       ),
@@ -4429,9 +4432,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Gravity Well',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 4,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 34,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 33,
       ),
@@ -4561,9 +4564,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Dark Matter',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 5,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 35,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 34,
       ),
@@ -4693,9 +4696,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Warp Field',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 6,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 36,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 35,
       ),
@@ -4825,9 +4828,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Tidal Force',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 7,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 37,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 36,
       ),
@@ -4953,9 +4956,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Accretion',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 8,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 38,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 37,
       ),
@@ -5085,9 +5088,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Horizon Breach',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 9,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 39,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 38,
       ),
@@ -5229,9 +5232,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Event Horizon',
       worldMeta: LevelWorldMeta(
-        worldId: 4,
-        levelNumber: 10,
-        worldName: 'Event Horizon',
+        worldId: 1,
+        levelNumber: 40,
+        worldName: 'Nebula Nursery',
         isUnlocked: false,
         unlockRequirement: 39,
       ),
@@ -5386,9 +5389,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'First Frost',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 1,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 40,
       ),
@@ -5401,14 +5404,13 @@ class LevelCatalog {
         StarType.rainbow,
         StarType.supernova,
         StarType.blackHole,
-        StarType.frozenStar,
       ],
       randomSeed: 5617,
-      objective: LevelObjective.clearStarType(4, StarType.frozenStar),
+      objective: LevelObjective.clearStarType(4, StarType.meteor),
       initialStars: [
         InitialStarPlacement(
           position: GridPosition(0, 0),
-          type: StarType.frozenStar,
+          type: StarType.meteor,
         ),
         InitialStarPlacement(
           position: GridPosition(0, 2),
@@ -5416,7 +5418,7 @@ class LevelCatalog {
         ),
         InitialStarPlacement(
           position: GridPosition(0, 4),
-          type: StarType.frozenStar,
+          type: StarType.meteor,
         ),
         InitialStarPlacement(
           position: GridPosition(0, 6),
@@ -5424,7 +5426,7 @@ class LevelCatalog {
         ),
         InitialStarPlacement(
           position: GridPosition(0, 8),
-          type: StarType.frozenStar,
+          type: StarType.meteor,
         ),
         InitialStarPlacement(
           position: GridPosition(1, 0),
@@ -5468,7 +5470,7 @@ class LevelCatalog {
         ),
         InitialStarPlacement(
           position: GridPosition(2, 1),
-          type: StarType.frozenStar,
+          type: StarType.meteor,
         ),
         InitialStarPlacement(
           position: GridPosition(2, 3),
@@ -5507,9 +5509,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Ice Storm',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 2,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 41,
       ),
@@ -5640,9 +5642,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Cryo Field',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 3,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 42,
       ),
@@ -5773,9 +5775,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Absolute Zero',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 4,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 43,
       ),
@@ -5918,9 +5920,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Permafrost',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 5,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 44,
       ),
@@ -6055,9 +6057,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Ice Veil',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 6,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 45,
       ),
@@ -6200,9 +6202,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Crystal Web',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 7,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 46,
       ),
@@ -6345,9 +6347,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Tundra',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 8,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 47,
       ),
@@ -6490,9 +6492,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Blizzard',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 9,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 48,
       ),
@@ -6647,9 +6649,9 @@ class LevelCatalog {
       version: 1,
       displayName: 'Frozen Core',
       worldMeta: LevelWorldMeta(
-        worldId: 5,
+        worldId: 2,
         levelNumber: 10,
-        worldName: 'Frozen Nebula',
+        worldName: 'Asteroid Fields',
         isUnlocked: false,
         unlockRequirement: 49,
       ),
@@ -6833,6 +6835,13 @@ class LevelCatalog {
         ),
       ],
     ),
+
+    // ════════════════════════════════════════════════════════════════════════
+    // LEVELS 51–200  (imported from split catalog files)
+    // ════════════════════════════════════════════════════════════════════════
+    ...levelsFrom51To100,
+    ...levelsFrom101To150,
+    ...levelsFrom151To200,
   ];
 
   /// Returns the [LevelDefinition] for [id], or null if not in the catalog.

@@ -27,9 +27,9 @@ void main() {
       expect(a.seed, isNot(equals(b.seed)));
     });
 
-    test('generated challenge has a valid level id (1–50)', () {
+    test('generated challenge has a valid level id (1–200 M12)', () {
       final c = gen.generateForDate('2024-10-05');
-      expect(c.levelId, inInclusiveRange(1, 50));
+      expect(c.levelId, inInclusiveRange(1, 200));
     });
 
     test('bonusMoveLimit is within the allowed clamp range (8–60)', () {

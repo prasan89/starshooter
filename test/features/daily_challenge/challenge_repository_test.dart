@@ -55,13 +55,15 @@ void main() {
 
     test('history is capped at 30 entries', () async {
       for (int i = 1; i <= 35; i++) {
-        await repo.saveHistoryEntry(ChallengeHistoryEntry(
-          date: '2024-10-${i.toString().padLeft(2, '0')}',
-          levelId: i % 50 + 1,
-          completed: true,
-          score: i * 100,
-          stars: 1,
-        ));
+        await repo.saveHistoryEntry(
+          ChallengeHistoryEntry(
+            date: '2024-10-${i.toString().padLeft(2, '0')}',
+            levelId: i % 50 + 1,
+            completed: true,
+            score: i * 100,
+            stars: 1,
+          ),
+        );
       }
       expect(repo.getHistory().length, 30);
     });

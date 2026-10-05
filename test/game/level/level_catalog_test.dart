@@ -4,13 +4,13 @@ import 'package:star_shooter/game/level/level_validator.dart';
 
 void main() {
   group('LevelCatalog', () {
-    test('has exactly 50 levels', () {
-      expect(LevelCatalog.allLevels.length, 50);
+    test('has exactly 200 levels (M12)', () {
+      expect(LevelCatalog.allLevels.length, 200);
     });
 
-    test('level IDs are 1–50', () {
-      final ids = LevelCatalog.allLevels.map((l) => l.id).toList();
-      for (int i = 1; i <= 50; i++) {
+    test('level IDs are 1–200', () {
+      final ids = LevelCatalog.allLevels.map((l) => l.id).toSet();
+      for (int i = 1; i <= 200; i++) {
         expect(ids.contains(i), isTrue, reason: 'Missing level $i');
       }
     });
@@ -25,7 +25,7 @@ void main() {
       expect(LevelCatalog.getLevelById(999), isNull);
     });
 
-    test('all 50 levels pass validation', () {
+    test('all levels pass validation', () {
       final failures = <String>[];
       for (final level in LevelCatalog.allLevels) {
         final result = LevelValidator.validate(level);
@@ -42,18 +42,19 @@ void main() {
       );
     });
 
-    test('world 1 has levels 1–10', () {
+    // M12 world structure: 5 worlds × 40 levels
+    test('world 1 (Nebula Nursery) has levels 1–40', () {
       final w1 = LevelCatalog.getWorld(1);
-      expect(w1.length, 10);
+      expect(w1.length, 40);
       expect(w1.first.id, 1);
-      expect(w1.last.id, 10);
+      expect(w1.last.id, 40);
     });
 
-    test('world 5 has levels 41–50', () {
+    test('world 5 (Frozen Nebula) has levels 161–200', () {
       final w5 = LevelCatalog.getWorld(5);
-      expect(w5.length, 10);
-      expect(w5.first.id, 41);
-      expect(w5.last.id, 50);
+      expect(w5.length, 40);
+      expect(w5.first.id, 161);
+      expect(w5.last.id, 200);
     });
 
     test('levels are ordered by id', () {

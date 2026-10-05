@@ -73,23 +73,22 @@ class _FakeLevelRepository implements LevelRepository {
 void main() {
   group('World progression', () {
     test('world 1 unlocked by default (level 1 unlocked)', () {
-      // World 1 has levels 1–10. Level 1 is always unlocked (isUnlocked: true
-      // in the catalog definition).
+      // World 1 (Nebula Nursery) has levels 1–40. Level 1 is always unlocked.
       final world1Levels = LevelCatalog.getWorld(1);
       expect(world1Levels.first.id, 1);
       expect(world1Levels.first.worldMeta?.isUnlocked, isTrue);
     });
 
-    test('world 2 first level is 11', () {
+    test('world 2 first level is 41 (M12 new world structure)', () {
       final world2Levels = LevelCatalog.getWorld(2);
-      expect(world2Levels.first.id, 11);
+      expect(world2Levels.first.id, 41);
     });
 
-    test('completing level 10 unlocks level 11', () async {
+    test('completing level 40 unlocks level 41', () async {
       final repo = _FakeLevelRepository(
-        highest: 11,
+        highest: 41,
         progress: [
-          for (int i = 1; i <= 10; i++)
+          for (int i = 1; i <= 40; i++)
             LevelProgress(
               levelId: i,
               isCompleted: true,
@@ -103,7 +102,7 @@ void main() {
         worldProgressUseCase: GetWorldProgressUseCase(repo),
       );
       await notifier.load();
-      expect(notifier.isLevelUnlocked(11), isTrue);
+      expect(notifier.isLevelUnlocked(41), isTrue);
     });
 
     test('GetWorldProgressUseCase returns 5 worlds', () async {
@@ -117,7 +116,7 @@ void main() {
     });
 
     test('world progress reflects completed levels', () async {
-      // Complete all 10 levels of world 1
+      // Complete first 10 levels of world 1 (out of 40)
       final repo = _FakeLevelRepository(
         highest: 11,
         progress: [
@@ -136,7 +135,7 @@ void main() {
         onSuccess: (worlds) {
           final world1 = worlds.firstWhere((w) => w.worldId == 1);
           expect(world1.completedLevels, 10);
-          expect(world1.totalStars, 20); // 10 levels x 2 stars
+          expect(world1.totalStars, 20); // 10 completed levels x 2 stars
         },
         onFailure: (_) => fail('should succeed'),
       );

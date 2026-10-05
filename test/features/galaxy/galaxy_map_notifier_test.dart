@@ -140,7 +140,7 @@ void main() {
       expect(notifier.currentLevelId, 2);
     });
 
-    test('levelsForWorld returns 10 levels for each world', () async {
+    test('levelsForWorld returns 40 levels for each world (M12)', () async {
       final repo = makeRepo();
       final notifier = GalaxyMapNotifier(
         levelRepository: repo,
@@ -148,7 +148,7 @@ void main() {
       );
       // levelsForWorld delegates to LevelCatalog — no load() required
       for (int w = 1; w <= 5; w++) {
-        expect(notifier.levelsForWorld(w).length, 10);
+        expect(notifier.levelsForWorld(w).length, 40);
       }
     });
 
