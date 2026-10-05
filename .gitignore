@@ -33,3 +33,6 @@ google-services.json
 *.freezed.dart
 
 # Note: pubspec.lock is intentionally NOT ignored for apps (only libraries omit it)
+android/.gradle/
+.flutter-plugins-dependencies
+android/local.properties

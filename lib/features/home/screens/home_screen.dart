@@ -100,11 +100,11 @@ class HomeScreen extends StatelessWidget {
                 const Spacer(),
 
                 // ── Player stats ──────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(
+                const Padding(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                   ),
-                  child: const _PlayerStatsRow(),
+                  child: _PlayerStatsRow(),
                 ),
 
                 const SizedBox(height: AppSpacing.xl),
@@ -195,14 +195,14 @@ class _PlayerStatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CosmicCard(
-      padding: const EdgeInsets.symmetric(
+    return const CosmicCard(
+      padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
+        children: [
           _StatItem(
             icon: Icons.military_tech_rounded,
             label: 'Level',
@@ -256,7 +256,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       height: 36,
       child: VerticalDivider(
         color: AppColors.shimmerBase,

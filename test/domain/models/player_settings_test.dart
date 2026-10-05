@@ -63,7 +63,7 @@ void main() {
       });
 
       test('fromJson falls back to true when keys are absent', () {
-        final settings = PlayerSettings.fromJson({});
+        final settings = PlayerSettings.fromJson(const {});
         expect(settings.musicEnabled, isTrue);
         expect(settings.sfxEnabled, isTrue);
         expect(settings.hapticsEnabled, isTrue);

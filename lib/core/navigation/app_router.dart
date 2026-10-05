@@ -30,8 +30,7 @@ abstract final class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: false,
-    errorBuilder: (context, state) =>
-        _RouterErrorScreen(error: state.error),
+    errorBuilder: (context, state) => _RouterErrorScreen(error: state.error),
     routes: [
       GoRoute(
         path: AppRoutes.splash,

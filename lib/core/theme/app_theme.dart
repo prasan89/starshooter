@@ -82,11 +82,11 @@ abstract final class AppTheme {
             ),
           ),
         ),
-        snackBarTheme: SnackBarThemeData(
+        snackBarTheme: const SnackBarThemeData(
           backgroundColor: AppColors.surface,
           contentTextStyle: AppTextStyles.bodyMedium,
           behavior: SnackBarBehavior.floating,
-          shape: const RoundedRectangleBorder(
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(
               Radius.circular(AppSpacing.radiusSm),
             ),

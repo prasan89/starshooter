@@ -12,7 +12,9 @@ final class StorageFailure extends Failure {
 }
 
 final class NotFoundFailure extends Failure {
-  const NotFoundFailure([super.message = 'The requested resource was not found.']);
+  const NotFoundFailure([
+    super.message = 'The requested resource was not found.',
+  ]);
 }
 
 final class ValidationFailure extends Failure {

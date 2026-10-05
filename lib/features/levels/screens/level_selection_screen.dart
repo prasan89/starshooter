@@ -48,8 +48,8 @@ class LevelSelectionScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(
                     AppSpacing.md,
                     AppSpacing.sm,
                     AppSpacing.md,
@@ -76,11 +76,9 @@ class LevelSelectionScreen extends StatelessWidget {
                     itemCount: _levelCount,
                     itemBuilder: (context, index) {
                       final levelNumber = index + 1;
-                      final levelId =
-                          '${worldId}_$levelNumber';
+                      final levelId = '${worldId}_$levelNumber';
                       // Only first level of first world is unlocked
-                      final isUnlocked =
-                          worldId == '1' && levelNumber == 1;
+                      final isUnlocked = worldId == '1' && levelNumber == 1;
                       const starsEarned = 0;
 
                       return _LevelTile(

@@ -72,9 +72,13 @@ void main() {
     testWidgets('tapping "PLAY" triggers navigation to /galaxy-map',
         (tester) async {
       String? navigated;
-      await tester.pumpWidget(buildHomeApp(navigatedTo: (loc) {
-        navigated = loc;
-      }));
+      await tester.pumpWidget(
+        buildHomeApp(
+          navigatedTo: (loc) {
+            navigated = loc;
+          },
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('PLAY'));

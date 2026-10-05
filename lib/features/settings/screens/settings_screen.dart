@@ -40,7 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             // ── Sound ────────────────────────────────────────────────────
-            _SectionHeader(title: 'Sound'),
+            const _SectionHeader(title: 'Sound'),
             const SizedBox(height: AppSpacing.sm),
             CosmicCard(
               padding: EdgeInsets.zero,
@@ -71,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // ── Haptics ──────────────────────────────────────────────────
-            _SectionHeader(title: 'Haptics'),
+            const _SectionHeader(title: 'Haptics'),
             const SizedBox(height: AppSpacing.sm),
             CosmicCard(
               padding: EdgeInsets.zero,
@@ -86,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // ── Purchases ────────────────────────────────────────────────
-            _SectionHeader(title: 'Purchases'),
+            const _SectionHeader(title: 'Purchases'),
             const SizedBox(height: AppSpacing.sm),
             CosmicCard(
               padding: EdgeInsets.zero,
@@ -106,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // ── Legal ────────────────────────────────────────────────────
-            _SectionHeader(title: 'Legal'),
+            const _SectionHeader(title: 'Legal'),
             const SizedBox(height: AppSpacing.sm),
             CosmicCard(
               padding: EdgeInsets.zero,
@@ -122,7 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // ── About ────────────────────────────────────────────────────
-            _SectionHeader(title: 'About'),
+            const _SectionHeader(title: 'About'),
             const SizedBox(height: AppSpacing.sm),
             CosmicCard(
               child: Column(
@@ -136,7 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         size: 20,
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      Text('App Name', style: AppTextStyles.bodyMedium),
+                      const Text('App Name', style: AppTextStyles.bodyMedium),
                       const Spacer(),
                       Text(
                         kAppName,
@@ -155,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         size: 20,
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      Text('Version', style: AppTextStyles.bodyMedium),
+                      const Text('Version', style: AppTextStyles.bodyMedium),
                       const Spacer(),
                       Text(
                         kAppVersion,

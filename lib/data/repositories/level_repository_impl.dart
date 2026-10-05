@@ -86,9 +86,9 @@ class LevelRepositoryImpl implements LevelRepository {
       // Load existing list, update or insert the entry for this level.
       final allResult = await getAllLevelProgress();
       final existing = allResult.when(
-            onSuccess: (list) => list,
-            onFailure: (_) => <LevelProgress>[],
-          );
+        onSuccess: (list) => list,
+        onFailure: (_) => <LevelProgress>[],
+      );
 
       final updated = [
         for (final p in existing)

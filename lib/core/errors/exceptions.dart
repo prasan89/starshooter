@@ -12,7 +12,9 @@ final class StorageException extends AppException {
 }
 
 final class NotFoundException extends AppException {
-  const NotFoundException([super.message = 'The requested resource was not found.']);
+  const NotFoundException([
+    super.message = 'The requested resource was not found.',
+  ]);
 }
 
 final class ValidationException extends AppException {

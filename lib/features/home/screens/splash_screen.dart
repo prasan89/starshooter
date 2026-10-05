@@ -153,11 +153,11 @@ class _SplashScreenState extends State<SplashScreen>
               opacity: _fadeAnimation,
               child: Column(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 120,
                     child: LinearProgressIndicator(
                       backgroundColor: AppColors.shimmerBase,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
+                      valueColor: AlwaysStoppedAnimation<Color>(
                         AppColors.primary,
                       ),
                     ),

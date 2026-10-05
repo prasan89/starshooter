@@ -13,11 +13,27 @@ class PremiumScreen extends StatelessWidget {
   const PremiumScreen({super.key});
 
   static const _benefits = [
-    (Icons.all_inclusive_rounded, 'Unlimited Attempts', 'Play as many levels as you want, any time.'),
+    (
+      Icons.all_inclusive_rounded,
+      'Unlimited Attempts',
+      'Play as many levels as you want, any time.'
+    ),
     (Icons.block_rounded, 'No Ads', 'Enjoy a completely ad-free experience.'),
-    (Icons.cloud_done_rounded, 'Cloud Sync', 'Sync your progress across all devices.'),
-    (Icons.palette_rounded, 'Exclusive Themes', 'Unlock premium cosmic visual themes.'),
-    (Icons.star_rounded, 'Bonus Stars', 'Earn 2× stars on every completed level.'),
+    (
+      Icons.cloud_done_rounded,
+      'Cloud Sync',
+      'Sync your progress across all devices.'
+    ),
+    (
+      Icons.palette_rounded,
+      'Exclusive Themes',
+      'Unlock premium cosmic visual themes.'
+    ),
+    (
+      Icons.star_rounded,
+      'Bonus Stars',
+      'Earn 2× stars on every completed level.'
+    ),
   ];
 
   @override
@@ -83,7 +99,7 @@ class PremiumScreen extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xl),
 
                       // Subscribe CTA (disabled — coming soon)
-                      CosmicButton(
+                      const CosmicButton(
                         label: 'Coming Soon',
                         onPressed: null,
                         enabled: false,

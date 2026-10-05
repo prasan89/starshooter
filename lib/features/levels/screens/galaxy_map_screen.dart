@@ -160,7 +160,10 @@ class _WorldTile extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: isLocked
                           ? const LinearGradient(
-                              colors: [AppColors.starEmpty, AppColors.starEmpty],
+                              colors: [
+                                AppColors.starEmpty,
+                                AppColors.starEmpty,
+                              ],
                             )
                           : LinearGradient(colors: gradientColors),
                     ),

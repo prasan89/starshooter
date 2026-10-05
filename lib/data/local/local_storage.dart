@@ -123,7 +123,9 @@ class LocalStorage {
       if (raw == null || raw.isEmpty) return null;
       final decoded = jsonDecode(raw);
       if (decoded is Map<String, dynamic>) return decoded;
-      dev.log('LocalStorage.getJson($key): unexpected type ${decoded.runtimeType}');
+      dev.log(
+        'LocalStorage.getJson($key): unexpected type ${decoded.runtimeType}',
+      );
       return null;
     } catch (e, st) {
       dev.log('LocalStorage.getJson($key) failed', error: e, stackTrace: st);
@@ -149,12 +151,12 @@ class LocalStorage {
       if (raw == null || raw.isEmpty) return null;
       final decoded = jsonDecode(raw);
       if (decoded is! List) {
-        dev.log('LocalStorage.getJsonList($key): unexpected type ${decoded.runtimeType}');
+        dev.log(
+          'LocalStorage.getJsonList($key): unexpected type ${decoded.runtimeType}',
+        );
         return null;
       }
-      return decoded
-          .whereType<Map<String, dynamic>>()
-          .toList(growable: false);
+      return decoded.whereType<Map<String, dynamic>>().toList(growable: false);
     } catch (e, st) {
       dev.log(
         'LocalStorage.getJsonList($key) failed',

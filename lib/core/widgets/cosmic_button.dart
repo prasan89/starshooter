@@ -68,9 +68,8 @@ class CosmicButton extends StatelessWidget {
         return Container(
           height: 52,
           width: fullWidth ? double.infinity : null,
-          constraints: minWidth != null
-              ? BoxConstraints(minWidth: minWidth!)
-              : null,
+          constraints:
+              minWidth != null ? BoxConstraints(minWidth: minWidth!) : null,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: BoxDecoration(
             gradient: isActive
@@ -101,9 +100,8 @@ class CosmicButton extends StatelessWidget {
         return Container(
           height: 52,
           width: fullWidth ? double.infinity : null,
-          constraints: minWidth != null
-              ? BoxConstraints(minWidth: minWidth!)
-              : null,
+          constraints:
+              minWidth != null ? BoxConstraints(minWidth: minWidth!) : null,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: BoxDecoration(
             color: Colors.transparent,
@@ -122,9 +120,8 @@ class CosmicButton extends StatelessWidget {
         return Container(
           height: 52,
           width: fullWidth ? double.infinity : null,
-          constraints: minWidth != null
-              ? BoxConstraints(minWidth: minWidth!)
-              : null,
+          constraints:
+              minWidth != null ? BoxConstraints(minWidth: minWidth!) : null,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: _buildContent(
             isActive ? AppColors.primary : AppColors.textDisabled,

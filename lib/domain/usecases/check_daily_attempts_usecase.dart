@@ -15,8 +15,8 @@ class CheckDailyAttemptsUseCase {
   Future<Result<DailyAttempts>> call() async {
     final result = await _playerRepository.getDailyAttempts();
     return switch (result) {
-      Failure<DailyAttempts>() => result,
-      Success<DailyAttempts>(:final value) => _maybeReset(value),
+      ResultFailure<DailyAttempts>() => result,
+      Success<DailyAttempts>(:final value) => await _maybeReset(value),
     };
   }
 
@@ -29,14 +29,14 @@ class CheckDailyAttemptsUseCase {
         now.day != lastReset.day;
 
     if (!isNewDay) {
-      return Success(attempts);
+      return Result.success(attempts);
     }
 
     final reset = attempts.reset();
     final saveResult = await _playerRepository.saveDailyAttempts(reset);
     return switch (saveResult) {
-      Failure<void>(:final error) => Failure(error),
-      Success<void>() => Success(reset),
+      ResultFailure<void>(:final error) => Result.failure(error),
+      Success<void>() => Result.success(reset),
     };
   }
 }

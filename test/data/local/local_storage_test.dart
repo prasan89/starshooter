@@ -84,7 +84,8 @@ void main() {
         expect(storage.getJson('empty'), isNull);
       });
 
-      test('returns null when stored value is a JSON array (not a map)', () async {
+      test('returns null when stored value is a JSON array (not a map)',
+          () async {
         await prefs.setString('arr', '[1, 2, 3]');
         expect(storage.getJson('arr'), isNull);
       });

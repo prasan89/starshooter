@@ -72,7 +72,9 @@ void main() {
     });
 
     group('corrupt stored data', () {
-      test('getSettings with corrupt JSON returns defaults or failure gracefully', () async {
+      test(
+          'getSettings with corrupt JSON returns defaults or failure gracefully',
+          () async {
         await prefs.setString('player_settings', '{invalid json');
         final result = await repository.getSettings();
         // The implementation must not throw; it returns either defaults or a failure.

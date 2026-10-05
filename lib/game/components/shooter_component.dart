@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:flame/components.dart';
+import 'package:flutter/painting.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 
 /// Placeholder Flame component for the bubble launcher / shooter.
@@ -15,13 +14,13 @@ class ShooterComponent extends PositionComponent {
   static const double _triangleHeight = 44.0;
 
   @override
-  void onGameResize(Vector2 gameSize) {
-    super.onGameResize(gameSize);
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
 
     // Anchor: bottom-centre of the screen, slightly above the edge.
     position = Vector2(
-      gameSize.x / 2,
-      gameSize.y - _triangleHeight - 24,
+      size.x / 2,
+      size.y - _triangleHeight - 24,
     );
   }
 
@@ -29,9 +28,9 @@ class ShooterComponent extends PositionComponent {
   void render(Canvas canvas) {
     // Build the triangle path (pointing upward, tip at y=0, base at y=height).
     final path = Path()
-      ..moveTo(0, -_triangleHeight)            // tip
-      ..lineTo(-_halfBase, 0)                   // bottom-left
-      ..lineTo(_halfBase, 0)                    // bottom-right
+      ..moveTo(0, -_triangleHeight) // tip
+      ..lineTo(-_halfBase, 0) // bottom-left
+      ..lineTo(_halfBase, 0) // bottom-right
       ..close();
 
     // Glow / halo effect — a slightly larger blurred copy behind.
@@ -46,13 +45,13 @@ class ShooterComponent extends PositionComponent {
     canvas.drawPath(
       path,
       Paint()
-        ..shader = LinearGradient(
+        ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [AppColors.primary, AppColors.secondary],
         ).createShader(
           Rect.fromCenter(
-            center: Offset(0, -_triangleHeight / 2),
+            center: const Offset(0, -_triangleHeight / 2),
             width: _halfBase * 2,
             height: _triangleHeight,
           ),

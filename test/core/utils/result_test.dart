@@ -31,12 +31,12 @@ void main() {
       });
     });
 
-    group('Failure', () {
+    group('ResultFailure', () {
       test('can be created via factory and error is accessible', () {
         const failure = StorageFailure('disk full');
         final result = Result<int>.failure(failure);
-        expect(result, isA<Failure<int>>());
-        expect((result as Failure<int>).error, equals(failure));
+        expect(result, isA<ResultFailure<int>>());
+        expect((result as ResultFailure<int>).error, equals(failure));
       });
 
       test('isFailure returns true', () {
@@ -62,14 +62,14 @@ void main() {
 
     group('Success toString', () {
       test('includes value in string representation', () {
-        final result = Success<int>(99);
+        const result = Success<int>(99);
         expect(result.toString(), contains('99'));
       });
     });
 
-    group('Failure toString', () {
+    group('ResultFailure toString', () {
       test('includes failure message in string representation', () {
-        final result = Failure<int>(const StorageFailure('oops'));
+        const result = ResultFailure<int>(StorageFailure('oops'));
         expect(result.toString(), contains('oops'));
       });
     });

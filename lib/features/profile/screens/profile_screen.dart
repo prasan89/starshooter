@@ -84,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            CosmicCard(
+            const CosmicCard(
               child: Column(
                 children: [
                   _StatRow(
@@ -92,13 +92,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Stars Collected',
                     value: '$_totalStars',
                   ),
-                  const Divider(color: AppColors.shimmerBase, height: 24),
+                  Divider(color: AppColors.shimmerBase, height: 24),
                   _StatRow(
                     icon: Icons.check_circle_outline_rounded,
                     label: 'Levels Completed',
                     value: '$_levelsCompleted',
                   ),
-                  const Divider(color: AppColors.shimmerBase, height: 24),
+                  Divider(color: AppColors.shimmerBase, height: 24),
                   _StatRow(
                     icon: Icons.emoji_events_rounded,
                     label: 'Worlds Unlocked',
@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? AppColors.starFilled.withAlpha(30)
                           : AppColors.shimmerBase,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.workspace_premium_rounded,
                       color: _isPremium
                           ? AppColors.starFilled
@@ -155,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : AppColors.textPrimary,
                           ),
                         ),
-                        Text(
+                        const Text(
                           _isPremium
                               ? 'All features unlocked'
                               : 'Upgrade for unlimited access',
@@ -199,9 +199,9 @@ class _AvatarSection extends StatelessWidget {
             Container(
               width: 88,
               height: 88,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [
                     AppColors.buttonGradientStart,
                     AppColors.buttonGradientEnd,
@@ -229,9 +229,7 @@ class _AvatarSection extends StatelessWidget {
               ),
           ],
         ),
-
         const SizedBox(height: AppSpacing.md),
-
         if (isEditing)
           SizedBox(
             width: 200,
@@ -239,8 +237,8 @@ class _AvatarSection extends StatelessWidget {
               controller: nameController,
               textAlign: TextAlign.center,
               style: AppTextStyles.headlineMedium,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
                   vertical: AppSpacing.xs,
                 ),
@@ -255,12 +253,10 @@ class _AvatarSection extends StatelessWidget {
           )
         else
           Text(nameController.text, style: AppTextStyles.headlineMedium),
-
         const SizedBox(height: AppSpacing.xs),
-        Text('Cosmic Explorer', style: AppTextStyles.bodySmall),
-
+        const Text('Cosmic Explorer', style: AppTextStyles.bodySmall),
         const SizedBox(height: AppSpacing.sm),
-        StarRating(rating: 0, size: 16),
+        const StarRating(rating: 0, size: 16),
       ],
     );
   }

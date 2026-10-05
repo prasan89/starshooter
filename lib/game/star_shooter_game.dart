@@ -27,23 +27,6 @@ class StarShooterGame extends FlameGame
     await add(ShooterComponent());
   }
 
-  @override
-  void onGameResize(Vector2 size) {
-    super.onGameResize(size);
-    // Components react to resize via their own onGameResize overrides.
-    // Camera viewport is updated automatically by FlameGame.
-  }
-
-  // ── Lifecycle ────────────────────────────────────────────────────────────
-
-  @override
-  void onRemove() {
-    super.onRemove();
-    // Release any game-level resources here in future milestones.
-  }
-
-  // ── Pause / Resume ───────────────────────────────────────────────────────
-
   /// Pauses the game loop and all component updates.
   void pauseGame() => paused = true;
 

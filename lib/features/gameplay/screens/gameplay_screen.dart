@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/theme/app_spacing.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
-import 'package:star_shooter/core/widgets/cosmic_button.dart';
 
 /// Gameplay screen placeholder.
 ///
@@ -62,14 +61,23 @@ class GameplayScreen extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Row(
-                        children: const [
-                          Icon(Icons.star_rounded,
-                              color: AppColors.starFilled, size: 20),
-                          Icon(Icons.star_outline_rounded,
-                              color: AppColors.starEmpty, size: 20),
-                          Icon(Icons.star_outline_rounded,
-                              color: AppColors.starEmpty, size: 20),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            color: AppColors.starFilled,
+                            size: 20,
+                          ),
+                          Icon(
+                            Icons.star_outline_rounded,
+                            color: AppColors.starEmpty,
+                            size: 20,
+                          ),
+                          Icon(
+                            Icons.star_outline_rounded,
+                            color: AppColors.starEmpty,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ],
@@ -123,7 +131,7 @@ class GameplayScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Paused', style: AppTextStyles.headlineMedium),
+        title: const Text('Paused', style: AppTextStyles.headlineMedium),
         content: Text(
           'Level $levelId',
           style: AppTextStyles.bodyMedium,
@@ -138,7 +146,7 @@ class GameplayScreen extends StatelessWidget {
               Navigator.of(ctx).pop();
               context.pop();
             },
-            child: Text(
+            child: const Text(
               'Quit',
               style: TextStyle(color: AppColors.error),
             ),

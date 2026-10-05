@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flame/components.dart';
 import 'package:flutter/widgets.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
@@ -30,18 +28,18 @@ class CosmicBackgroundComponent extends PositionComponent {
   /// field looks natural but is bit-for-bit reproducible.
   void _generateStars() {
     int state = _seed;
-    int _next() {
+    int next() {
       // LCG parameters from Numerical Recipes
       state = (state * 1664525 + 1013904223) & 0xFFFFFFFF;
       return state;
     }
 
-    double _nextFloat() => (_next() & 0xFFFF) / 0xFFFF.toDouble();
+    double nextFloat() => (next() & 0xFFFF) / 0xFFFF.toDouble();
 
     for (int i = 0; i < _starCount; i++) {
-      _starPositions.add(Offset(_nextFloat(), _nextFloat()));
+      _starPositions.add(Offset(nextFloat(), nextFloat()));
       // Most stars are tiny; a few are slightly larger (1-in-6 chance).
-      _starRadii.add((_next() % 6 == 0) ? 1.8 : 0.9);
+      _starRadii.add((next() % 6 == 0) ? 1.8 : 0.9);
     }
   }
 
@@ -75,7 +73,8 @@ class CosmicBackgroundComponent extends PositionComponent {
     );
 
     // Draw stars.
-    final starPaint = Paint()..color = AppColors.textPrimary.withValues(alpha: 0.85);
+    final starPaint = Paint()
+      ..color = AppColors.textPrimary.withValues(alpha: 0.85);
     for (int i = 0; i < _starPositions.length; i++) {
       final pos = _starPositions[i];
       canvas.drawCircle(

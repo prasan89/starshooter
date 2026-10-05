@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flame/components.dart';
 import 'package:flutter/widgets.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
@@ -33,14 +31,14 @@ class GameBoardComponent extends PositionComponent {
   }
 
   @override
-  void onGameResize(Vector2 gameSize) {
-    super.onGameResize(gameSize);
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
 
     // The board occupies the upper 65 % of the canvas, centred horizontally.
-    final boardWidth = gameSize.x * 0.9;
-    final boardHeight = gameSize.y * 0.65;
+    final boardWidth = size.x * 0.9;
+    final boardHeight = size.y * 0.65;
     size = Vector2(boardWidth, boardHeight);
-    position = Vector2((gameSize.x - boardWidth) / 2, gameSize.y * 0.04);
+    position = Vector2((size.x - boardWidth) / 2, size.y * 0.04);
 
     // Centre the label inside the board.
     _label.position = Vector2(

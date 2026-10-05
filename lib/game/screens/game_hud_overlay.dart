@@ -64,7 +64,7 @@ class _TopBar extends StatelessWidget {
           ),
 
           // Score placeholder
-          _HudChip(
+          const _HudChip(
             icon: Icons.star_rounded,
             iconColor: AppColors.starFilled,
             label: '0',
@@ -74,7 +74,7 @@ class _TopBar extends StatelessWidget {
           const SizedBox(width: 12),
 
           // Remaining shots placeholder
-          _HudChip(
+          const _HudChip(
             icon: Icons.bubble_chart_rounded,
             iconColor: AppColors.secondary,
             label: '—',
@@ -107,7 +107,7 @@ class _TopBar extends StatelessWidget {
       barrierColor: Colors.black54,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Paused', style: AppTextStyles.headlineMedium),
+        title: const Text('Paused', style: AppTextStyles.headlineMedium),
         content: Text(
           'Level $levelId',
           style: AppTextStyles.bodyMedium,
@@ -125,7 +125,7 @@ class _TopBar extends StatelessWidget {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: Text(
+            child: const Text(
               'Quit',
               style: TextStyle(color: AppColors.error),
             ),

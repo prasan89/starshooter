@@ -14,9 +14,9 @@ class GetLevelProgressUseCase {
     final result = await _levelRepository.getLevelProgress(levelId);
     return switch (result) {
       Success<LevelProgress>() => result,
-      Failure<LevelProgress>() =>
+      ResultFailure<LevelProgress>() =>
         // Treat a missing record as empty progress rather than a hard error.
-        Success(LevelProgress.empty(levelId)),
+        Result.success(LevelProgress.empty(levelId)),
     };
   }
 }

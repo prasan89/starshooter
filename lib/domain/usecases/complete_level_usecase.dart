@@ -25,8 +25,10 @@ class CompleteLevelUseCase {
 
   Future<Result<LevelProgress>> call(GameSession session) async {
     if (!session.isCompleted) {
-      return Failure(
-        const ValidationFailure('GameSession must be completed before calling CompleteLevelUseCase.'),
+      return Result.failure(
+        const ValidationFailure(
+          'GameSession must be completed before calling CompleteLevelUseCase.',
+        ),
       );
     }
 
@@ -35,7 +37,7 @@ class CompleteLevelUseCase {
         await _levelRepository.getLevelProgress(session.levelId);
     final existing = switch (existingResult) {
       Success<LevelProgress>(:final value) => value,
-      Failure<LevelProgress>() => LevelProgress.empty(session.levelId),
+      ResultFailure<LevelProgress>() => LevelProgress.empty(session.levelId),
     };
 
     // --- 2. Determine if the new session improves on the record ---
@@ -57,18 +59,17 @@ class CompleteLevelUseCase {
     // --- 3. Persist updated level progress ---
     final saveProgressResult =
         await _levelRepository.saveLevelProgress(updated);
-    if (saveProgressResult is Failure) {
-      return Failure(
-        (saveProgressResult as Failure<void>).error,
+    if (saveProgressResult is ResultFailure) {
+      return Result.failure(
+        (saveProgressResult as ResultFailure<void>).error,
       );
     }
 
     // --- 4. Update total stars on the player profile ---
     final profileResult = await _playerRepository.getProfile();
     if (profileResult case Success<dynamic>(:final value)) {
-      final starDelta = isBetter
-          ? (session.starsEarned - existing.stars).clamp(0, 3)
-          : 0;
+      final starDelta =
+          isBetter ? (session.starsEarned - existing.stars).clamp(0, 3) : 0;
       if (starDelta > 0) {
         final updatedProfile =
             value.copyWith(totalStars: value.totalStars + starDelta);
@@ -78,6 +79,6 @@ class CompleteLevelUseCase {
       }
     }
 
-    return Success(updated);
+    return Result.success(updated);
   }
 }

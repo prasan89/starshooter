@@ -125,7 +125,9 @@ void main() {
     });
 
     group('corrupt stored JSON', () {
-      test('getAllLevelProgress returns success with empty list for corrupt list data', () async {
+      test(
+          'getAllLevelProgress returns success with empty list for corrupt list data',
+          () async {
         // Write a raw corrupt value directly into SharedPreferences.
         await prefs.setString('level_completions', '{not a list}');
         final result = await repository.getAllLevelProgress();
