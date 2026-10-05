@@ -60,75 +60,145 @@ class ProjectileComponent extends PositionComponent
   @override
   void update(double dt) {
     if (!_active) return;
-    position += _velocity * dt;
+
     _shimmerT = (_shimmerT + dt * 3.0) % (2 * 3.1415926535);
 
-    // Spawn trail puffs at fixed intervals.
-    _trailTimer += dt;
-    if (_trailTimer >= _trailInterval) {
-      _trailTimer = 0;
-      game.add(
-        ShootingTrailComponent(
-          position: position.clone(),
-          color: _model.displayColor,
-        ),
-      );
-    }
+    // Flame can occasionally deliver a large frame delta during startup,
+    // backgrounding, or device load. Sub-stepping prevents a fast projectile
+    // from tunnelling through stars or skipping a wall.
+    var remaining = dt.clamp(0.0, 0.12);
+    const maxStep = 1.0 / 120.0;
 
-    final gs = game.size;
-    final board = game.board;
-    final boardRect = board.boardRect;
+    while (remaining > 0 && _active) {
+      final step = remaining < maxStep ? remaining : maxStep;
+      remaining -= step;
 
-    // Wall collision.
-    final wallResult = CollisionSystem.checkWallCollision(
-      position: position,
-      radius: _model.collisionRadius,
-      gameSize: gs,
-      boardRect: boardRect,
-    );
-    if (wallResult == CollisionResult.leftWall ||
-        wallResult == CollisionResult.rightWall) {
-      _velocity = CollisionSystem.reflectHorizontal(_velocity);
-      return;
-    }
-    if (wallResult == CollisionResult.ceiling) {
-      _landAt(position);
-      return;
-    }
+      final nextPosition = position + _velocity * step;
+      final gs = game.size;
+      final board = game.board;
+      final boardRect = board.boardRect;
 
-    // Star collision.
-    final hitGrid = CollisionSystem.checkStarCollision(
-      projectilePos: position,
-      projectileRadius: _model.collisionRadius,
-      board: board.grid,
-      boardRect: boardRect,
-    );
-    if (hitGrid != null) {
-      final snapPos = CollisionSystem.findSnapPosition(
+      // Horizontal walls are handled first. Clamp to the wall after reflecting
+      // so the next sub-step starts inside the playable area instead of
+      // repeatedly bouncing on the same wall.
+      if (nextPosition.x - _model.collisionRadius <= 0) {
+        position = Vector2(_model.collisionRadius, nextPosition.y);
+        _velocity = CollisionSystem.reflectHorizontal(_velocity);
+        continue;
+      }
+
+      if (nextPosition.x + _model.collisionRadius >= gs.x) {
+        position = Vector2(
+          gs.x - _model.collisionRadius,
+          nextPosition.y,
+        );
+        _velocity = CollisionSystem.reflectHorizontal(_velocity);
+        continue;
+      }
+
+      position = nextPosition;
+
+      // Check star collision BEFORE the ceiling. A star occupying the top row
+      // must still be hittable; the old ordering could classify that shot as a
+      // ceiling hit first.
+      final hitGrid = CollisionSystem.checkStarCollision(
         projectilePos: position,
-        hitPos: hitGrid,
+        projectileRadius: _model.collisionRadius,
         board: board.grid,
         boardRect: boardRect,
       );
-      _placeAtGrid(snapPos);
-      return;
-    }
 
-    // Out of bounds — fell off the bottom of the screen.
-    if (position.y > gs.y + 50) {
-      removeFromParent();
+      if (hitGrid != null) {
+        final snapPos = CollisionSystem.findSnapPosition(
+          projectilePos: position,
+          hitPos: hitGrid,
+          board: board.grid,
+          boardRect: boardRect,
+        );
+        if (board.grid.isValidPosition(snapPos) &&
+            !board.grid.isOccupied(snapPos)) {
+          _placeAtGrid(snapPos);
+        } else {
+          // A completely blocked local neighbourhood should not replace an
+          // existing star. Resolve the shot against the nearest valid cell
+          // instead of corrupting the board.
+          _landAt(position);
+        }
+        return;
+      }
+
+      // Ceiling collision. Clamp exactly to the playable ceiling before
+      // choosing the top-row landing cell.
+      if (position.y - _model.collisionRadius <= boardRect.top) {
+        position.y = boardRect.top + _model.collisionRadius;
+        _landAt(position);
+        return;
+      }
+
+      // A projectile should never fall below the launcher. This is a safety
+      // guard for malformed/custom levels.
+      if (position.y > gs.y + 50) {
+        _active = false;
+        removeFromParent();
+        return;
+      }
+
+      // Spawn trail puffs at fixed intervals.
+      _trailTimer += step;
+      if (_trailTimer >= _trailInterval) {
+        _trailTimer -= _trailInterval;
+        game.add(
+          ShootingTrailComponent(
+            position: position.clone(),
+            color: _model.displayColor,
+          ),
+        );
+      }
     }
   }
 
   void _landAt(Vector2 pos) {
     if (!_active) return;
     final board = game.board;
-    // Find the nearest free cell to where the projectile is.
-    var gridPos = board.grid.pixelToGrid(Offset(pos.x, pos.y), board.boardRect);
-    // If invalid (e.g. hit ceiling above row 0), clamp to row 0.
+
+    // Ceiling shots land in the top row. pixelToGrid() can return invalid for
+    // a position slightly above the mathematical cell centre, so normalize it
+    // explicitly against the top row.
+    var gridPos = board.grid.pixelToGrid(
+      Offset(pos.x, board.boardRect.top + board.grid.config.starRadius),
+      board.boardRect,
+    );
+
     if (!board.grid.isValidPosition(gridPos)) {
-      gridPos = GridPosition(0, gridPos.col.clamp(0, board.grid.config.cols - 1));
+      final col = ((pos.x - board.boardRect.left - board.grid.config.starRadius) /
+              board.grid.config.cellWidth)
+          .round()
+          .clamp(0, board.grid.config.cols - 1);
+      gridPos = GridPosition(0, col);
+      if (!board.grid.isValidPosition(gridPos)) {
+        gridPos = GridPosition(0, board.grid.config.cols - 1);
+      }
     }
+
+    // Never silently replace an existing top-row star.
+    if (board.grid.isOccupied(gridPos)) {
+      final free = board.grid.neighborsOf(gridPos)
+          .where((candidate) => !board.grid.isOccupied(candidate))
+          .toList();
+      if (free.isNotEmpty) {
+        free.sort((a, b) {
+          final ap = board.grid.gridToPixel(a, board.boardRect);
+          final bp = board.grid.gridToPixel(b, board.boardRect);
+          final da = (ap.dx - pos.x) * (ap.dx - pos.x) +
+              (ap.dy - pos.y) * (ap.dy - pos.y);
+          final db = (bp.dx - pos.x) * (bp.dx - pos.x) +
+              (bp.dy - pos.y) * (bp.dy - pos.y);
+          return da.compareTo(db);
+        });
+        gridPos = free.first;
+      }
+    }
+
     _placeAtGrid(gridPos);
   }
 
