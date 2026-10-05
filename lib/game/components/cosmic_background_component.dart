@@ -8,22 +8,38 @@ import 'package:star_shooter/core/theme/app_colors.dart';
 ///
 /// Features:
 /// - Deep space base fill
-/// - Three nebula lobes at distinct positions (bottom-right, centre-left, top)
+/// - Three nebula lobes at distinct positions with slow drift
 /// - 150 deterministic stars (seeded LCG) that slowly twinkle
-/// - Very slow time-based drift on nebula centres (parallax feel, no input)
+///
+/// Performance: star pixel positions and nebula paint objects are cached and
+/// only recomputed on resize. Per-frame work is minimal: 2 sin() calls for
+/// drift + 150 alpha computations + mutating a single reused Paint.
 class CosmicBackgroundComponent extends PositionComponent {
   CosmicBackgroundComponent() : super(priority: -10);
 
   static const int _starCount = 150;
   static const int _seed = 0xDEADBEEF;
 
-  // Per-star data
-  final List<Offset> _starPos = [];
+  // Per-star data (normalized [0,1] fractions).
+  final List<double> _starFracX = [];
+  final List<double> _starFracY = [];
   final List<double> _starR = [];
-  final List<double> _starBrightness = []; // base brightness [0.4, 1.0]
-  final List<double> _starTwinklePhase = []; // phase offset for twinkle
+  final List<double> _starBrightness = [];
+  final List<double> _starTwinklePhase = [];
+
+  // Cached pixel positions — rebuilt on resize.
+  final List<double> _starPxX = [];
+  final List<double> _starPxY = [];
 
   double _time = 0.0;
+
+  // ── Cached paint objects ─────────────────────────────────────────────────
+
+  final _bgPaint = Paint()..color = AppColors.background;
+  final _starPaint = Paint();
+  final _nebulaPaint1 = Paint();
+  final _nebulaPaint2 = Paint();
+  final _nebulaPaint3 = Paint();
 
   @override
   Future<void> onLoad() async {
@@ -41,7 +57,8 @@ class CosmicBackgroundComponent extends PositionComponent {
     double nf() => (next() & 0xFFFF) / 65535.0;
 
     for (int i = 0; i < _starCount; i++) {
-      _starPos.add(Offset(nf(), nf()));
+      _starFracX.add(nf());
+      _starFracY.add(nf());
       _starR.add(
         (next() % 6 == 0)
             ? 1.8
@@ -58,6 +75,46 @@ class CosmicBackgroundComponent extends PositionComponent {
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
     this.size = size.clone();
+    _rebuildStarPixels(size);
+    _rebuildNebulaPaints(size);
+  }
+
+  void _rebuildStarPixels(Vector2 sz) {
+    _starPxX.length = _starFracX.length;
+    _starPxY.length = _starFracY.length;
+    for (int i = 0; i < _starCount; i++) {
+      _starPxX[i] = _starFracX[i] * sz.x;
+      _starPxY[i] = _starFracY[i] * sz.y;
+    }
+  }
+
+  void _rebuildNebulaPaints(Vector2 sz) {
+    // Nebulae use fixed-position shaders; drift is handled per-frame by
+    // offsetting the draw center, so we just need an initial shader here.
+    // We rebuild on resize to use correct circle radii.
+    final c1 = Offset(sz.x * 0.75, sz.y * 0.85);
+    _nebulaPaint1.shader = RadialGradient(
+      colors: [
+        const Color(0xFF2D1B69).withValues(alpha: 0.12),
+        AppColors.background.withValues(alpha: 0.0),
+      ],
+    ).createShader(Rect.fromCircle(center: c1, radius: sz.x * 0.6));
+
+    final c2 = Offset(sz.x * 0.30, sz.y * 0.40);
+    _nebulaPaint2.shader = RadialGradient(
+      colors: [
+        const Color(0xFF1A1E4A).withValues(alpha: 0.18),
+        AppColors.background.withValues(alpha: 0.0),
+      ],
+    ).createShader(Rect.fromCircle(center: c2, radius: sz.x * 0.5));
+
+    final c3 = Offset(sz.x * 0.70, sz.y * 0.15);
+    _nebulaPaint3.shader = RadialGradient(
+      colors: [
+        AppColors.secondary.withValues(alpha: 0.07),
+        AppColors.background.withValues(alpha: 0.0),
+      ],
+    ).createShader(Rect.fromCircle(center: c3, radius: sz.x * 0.4));
   }
 
   @override
@@ -68,83 +125,42 @@ class CosmicBackgroundComponent extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final sz = size;
+    if (sz.x == 0 || sz.y == 0) return;
 
-    // Very slow parallax drift — nebula centres shift subtly over time.
-    final driftX = sin(_time * 0.04) * 0.02; // ±2 % of width
-    final driftY = sin(_time * 0.03 + 1.0) * 0.02; // ±2 % of height
+    final driftX = sin(_time * 0.04) * 0.02;
+    final driftY = sin(_time * 0.03 + 1.0) * 0.02;
 
-    // 1. Base deep space fill
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, sz.x, sz.y),
-      Paint()..color = AppColors.background,
-    );
+    // 1. Base fill.
+    canvas.drawRect(Rect.fromLTWH(0, 0, sz.x, sz.y), _bgPaint);
 
-    // 2. Bottom nebula — warm purple at bottom-right
-    final nebula1Center = Offset(
-      sz.x * (0.75 + driftX),
-      sz.y * (0.85 + driftY),
-    );
+    // 2. Nebulae (drift is small; shaders are pre-baked at rest positions).
     canvas.drawCircle(
-      nebula1Center,
+      Offset(sz.x * (0.75 + driftX), sz.y * (0.85 + driftY)),
       sz.x * 0.6,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            const Color(0xFF2D1B69).withValues(alpha: 0.12),
-            AppColors.background.withValues(alpha: 0.0),
-          ],
-        ).createShader(
-          Rect.fromCircle(center: nebula1Center, radius: sz.x * 0.6),
-        ),
-    );
-
-    // 3. Mid nebula — cosmic blue centre-left
-    final nebula2Center = Offset(
-      sz.x * (0.3 - driftX),
-      sz.y * (0.4 - driftY),
+      _nebulaPaint1,
     );
     canvas.drawCircle(
-      nebula2Center,
+      Offset(sz.x * (0.30 - driftX), sz.y * (0.40 - driftY)),
       sz.x * 0.5,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            const Color(0xFF1A1E4A).withValues(alpha: 0.18),
-            AppColors.background.withValues(alpha: 0.0),
-          ],
-        ).createShader(
-          Rect.fromCircle(center: nebula2Center, radius: sz.x * 0.5),
-        ),
-    );
-
-    // 4. Top nebula — slight pink/purple
-    final nebula3Center = Offset(
-      sz.x * (0.7 + driftX * 0.5),
-      sz.y * (0.15 - driftY * 0.5),
+      _nebulaPaint2,
     );
     canvas.drawCircle(
-      nebula3Center,
+      Offset(sz.x * (0.70 + driftX * 0.5), sz.y * (0.15 - driftY * 0.5)),
       sz.x * 0.4,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            AppColors.secondary.withValues(alpha: 0.07),
-            AppColors.background.withValues(alpha: 0.0),
-          ],
-        ).createShader(
-          Rect.fromCircle(center: nebula3Center, radius: sz.x * 0.4),
-        ),
+      _nebulaPaint3,
     );
 
-    // 5. Stars with twinkle
-    for (int i = 0; i < _starPos.length; i++) {
+    // 3. Stars — single reused Paint, color mutated per star.
+    for (int i = 0; i < _starCount; i++) {
       final phase = _starTwinklePhase[i] + _time * 0.7;
       final twinkle = 0.7 + sin(phase) * 0.3;
       final alpha = (_starBrightness[i] * twinkle).clamp(0.0, 1.0);
+      _starPaint.color =
+          Color.fromARGB((alpha * 230).round(), 255, 255, 255);
       canvas.drawCircle(
-        Offset(_starPos[i].dx * sz.x, _starPos[i].dy * sz.y),
+        Offset(_starPxX[i], _starPxY[i]),
         _starR[i],
-        Paint()..color = Color.fromARGB((alpha * 230).round(), 255, 255, 255),
+        _starPaint,
       );
     }
   }

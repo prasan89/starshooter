@@ -134,6 +134,12 @@ class StarShooterGame extends FlameGame
     audioService.resumeMusic();
   }
 
+  @override
+  void onRemove() {
+    audioService.dispose();
+    super.onRemove();
+  }
+
   // ── Settings ─────────────────────────────────────────────────────────────────
 
   /// Applies [settings] to the audio and haptic services.

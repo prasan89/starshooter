@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:star_shooter/app.dart';
 import 'package:star_shooter/data/providers/storage_provider.dart';
-import 'package:star_shooter/game/managers/game_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +28,6 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ...dataProviders,
-        ChangeNotifierProvider(create: (_) => GameManager()),
       ],
       child: const StarShooterApp(),
     ),

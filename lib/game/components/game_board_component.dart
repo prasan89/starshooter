@@ -29,9 +29,22 @@ class GameBoardComponent extends PositionComponent
     with HasGameReference<StarShooterGame> {
   BoardGrid _grid;
   final List<StarComponent> _starComponents = [];
+
+  // Keyed map for O(1) lookup during incremental sync.
+  final Map<GridPosition, StarComponent> _starMap = {};
+
   Rect _boardRect = Rect.zero;
   final Random _rng = Random();
   SpecialStarConfig _specialConfig = SpecialStarConfig.standard;
+
+  // Cached render paints — allocated once, not per-frame.
+  final _bgPaint = Paint()
+    ..color = const Color(0x1A4A90E2)
+    ..style = PaintingStyle.fill;
+  final _borderPaint = Paint()
+    ..color = const Color(0x594A90E2)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
 
   GameBoardComponent({LevelDefinition? levelDef})
       : _grid =
@@ -73,29 +86,43 @@ class GameBoardComponent extends PositionComponent
   // ── Star synchronisation ───────────────────────────────────────────────────
 
   Future<void> _syncStarsToBoard() async {
-    for (final child in _starComponents) {
-      child.removeFromParent();
-    }
-    _starComponents.clear();
+    final currentStars = {for (final s in _grid.allStars) s.gridPosition: s};
 
-    for (final star in _grid.allStars) {
-      final pixelCenter = _grid.gridToPixel(star.gridPosition, _boardRect);
-      final component = StarComponent(star);
-      // Convert absolute pixel position to local (component-relative) coords.
-      component.position = Vector2(
+    // Remove components whose grid positions no longer exist.
+    final toRemove = _starMap.keys
+        .where((pos) => !currentStars.containsKey(pos))
+        .toList();
+    for (final pos in toRemove) {
+      final comp = _starMap.remove(pos)!;
+      _starComponents.remove(comp);
+      comp.removeFromParent();
+    }
+
+    // Update existing components or add new ones.
+    for (final star in currentStars.values) {
+      final pos = star.gridPosition;
+      final pixelCenter = _grid.gridToPixel(pos, _boardRect);
+      final localPos = Vector2(
         pixelCenter.dx - _boardRect.left,
         pixelCenter.dy - _boardRect.top,
       );
-      await add(component);
-      _starComponents.add(component);
+      final existing = _starMap[pos];
+      if (existing != null) {
+        existing.model = star;
+        existing.position = localPos;
+      } else {
+        final component = StarComponent(star)..position = localPos;
+        await add(component);
+        _starComponents.add(component);
+        _starMap[pos] = component;
+      }
     }
   }
 
   void _repositionStars() {
-    for (final component in _starComponents) {
-      final pixelCenter =
-          _grid.gridToPixel(component.model.gridPosition, _boardRect);
-      component.position = Vector2(
+    for (final entry in _starMap.entries) {
+      final pixelCenter = _grid.gridToPixel(entry.key, _boardRect);
+      entry.value.position = Vector2(
         pixelCenter.dx - _boardRect.left,
         pixelCenter.dy - _boardRect.top,
       );
@@ -287,30 +314,21 @@ class GameBoardComponent extends PositionComponent
     super.render(canvas);
 
     // Subtle semi-transparent dark panel behind the star grid.
-    final bgPaint = Paint()
-      ..color = const Color(0x1A4A90E2)
-      ..style = PaintingStyle.fill;
-
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0, 0, _boardRect.width, _boardRect.height),
         const Radius.circular(16),
       ),
-      bgPaint,
+      _bgPaint,
     );
 
     // Board outline.
-    final borderPaint = Paint()
-      ..color = const Color(0x594A90E2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0, 0, _boardRect.width, _boardRect.height),
         const Radius.circular(16),
       ),
-      borderPaint,
+      _borderPaint,
     );
   }
 }

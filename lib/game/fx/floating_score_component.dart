@@ -6,12 +6,18 @@ import 'package:flutter/material.dart';
 ///
 /// Add this component at the world position where the match occurred. It removes
 /// itself automatically when the animation finishes.
+///
+/// TextPainter objects are laid out once in [onLoad] to avoid per-frame layout.
 class FloatingScoreComponent extends PositionComponent {
   final String _text;
   final Color _color;
   double _elapsed = 0;
   static const double _duration = 1.2;
-  static const double _riseSpeed = 60.0; // pixels per second upward
+  static const double _riseSpeed = 60.0;
+
+  // Cached layout dimensions — set in onLoad.
+  double _textWidth = 0;
+  double _textHeight = 0;
 
   FloatingScoreComponent({
     required Vector2 position,
@@ -27,6 +33,21 @@ class FloatingScoreComponent extends PositionComponent {
         );
 
   @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    // Measure once — text and size never change.
+    final tp = TextPainter(
+      text: TextSpan(
+        text: _text,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    _textWidth = tp.width;
+    _textHeight = tp.height;
+  }
+
+  @override
   void update(double dt) {
     _elapsed += dt;
     position.y -= _riseSpeed * dt;
@@ -37,13 +58,16 @@ class FloatingScoreComponent extends PositionComponent {
   void render(Canvas canvas) {
     final alpha = (1.0 - _elapsed / _duration).clamp(0.0, 1.0);
     final scale = (_elapsed < 0.1)
-        ? (1.0 + (_elapsed / 0.1) * 0.3) // quick scale-up entrance
-        : 1.3 - (_elapsed / _duration) * 0.3; // slight shrink while rising
+        ? (1.0 + (_elapsed / 0.1) * 0.3)
+        : 1.3 - (_elapsed / _duration) * 0.3;
 
     canvas.save();
     canvas.scale(scale, scale);
 
-    // Drop shadow — rendered first, offset by 1 px.
+    final dx = -_textWidth / 2;
+    final dy = -_textHeight / 2;
+
+    // Drop shadow — cheap: reuse dimensions from cached measurement.
     final shadow = TextPainter(
       text: TextSpan(
         text: _text,
@@ -55,12 +79,8 @@ class FloatingScoreComponent extends PositionComponent {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    shadow.paint(
-      canvas,
-      Offset(-shadow.width / 2 + 1, -shadow.height / 2 + 1),
-    );
+    shadow.paint(canvas, Offset(dx + 1, dy + 1));
 
-    // Main label with glow shadow.
     final painter = TextPainter(
       text: TextSpan(
         text: _text,
@@ -78,7 +98,7 @@ class FloatingScoreComponent extends PositionComponent {
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+    painter.paint(canvas, Offset(dx, dy));
 
     canvas.restore();
   }
