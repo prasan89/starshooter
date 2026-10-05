@@ -13,6 +13,10 @@ import 'package:star_shooter/domain/repositories/level_repository.dart';
 import 'package:star_shooter/domain/repositories/player_repository.dart';
 import 'package:star_shooter/domain/usecases/complete_level_usecase.dart';
 import 'package:star_shooter/domain/usecases/start_level_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/domain/analytics/challenge_analytics.dart';
+import 'package:star_shooter/features/daily_challenge/domain/usecases/complete_daily_challenge_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/presentation/screens/daily_challenge_result_screen.dart';
+import 'package:star_shooter/features/daily_challenge/presentation/state/daily_challenge_notifier.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
 import 'package:star_shooter/features/gameplay/screens/daily_limit_screen.dart';
 import 'package:star_shooter/features/gameplay/screens/failure_screen.dart';
@@ -180,6 +184,46 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
     final isNewBest = gm.score > previousBestScore;
 
+    // M11: Daily challenge hook — if this game started from a daily challenge,
+    // route to the challenge result screen instead of normal victory.
+    final dcNotifier = context.read<DailyChallengeNotifier>();
+    if (dcNotifier.startedFromDailyChallenge &&
+        dcNotifier.activeDailyChallenge != null) {
+      final challenge = dcNotifier.activeDailyChallenge!;
+      final newStreak =
+          await context.read<CompleteDailyChallengeUseCase>().call(
+                challenge: challenge,
+                score: gm.score,
+                stars: savedProgress.stars,
+                alreadyCompleted: false,
+              );
+      if (!mounted) return;
+      context.read<ChallengeAnalytics>().logChallengeCompleted(
+            challenge.date,
+            challenge.levelId,
+            gm.score,
+            savedProgress.stars,
+          );
+      dcNotifier.clearActiveChallenge();
+      if (!mounted) return;
+      _navigatingAway = true;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder<void>(
+          pageBuilder: (_, anim, __) => FadeTransition(
+            opacity: anim,
+            child: DailyChallengeResultScreen(
+              challenge: challenge,
+              score: gm.score,
+              stars: savedProgress.stars,
+              newStreak: newStreak,
+            ),
+          ),
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
+      return;
+    }
+
     _navigatingAway = true;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
@@ -209,6 +253,20 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
     await Future.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
+
+    // M11: Clear daily challenge context on failure.
+    final dcNotifier = context.read<DailyChallengeNotifier>();
+    if (dcNotifier.startedFromDailyChallenge) {
+      final challenge = dcNotifier.activeDailyChallenge;
+      if (challenge != null) {
+        context.read<ChallengeAnalytics>().logChallengeFailed(
+              challenge.date,
+              challenge.levelId,
+              gm.score,
+            );
+      }
+      dcNotifier.clearActiveChallenge();
+    }
 
     // Load existing best score for comparison in the failure screen.
     final repo = context.read<LevelRepository>();

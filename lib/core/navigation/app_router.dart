@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/widgets/error_widget.dart';
+import 'package:star_shooter/features/daily_challenge/presentation/screens/daily_challenge_screen.dart';
 import 'package:star_shooter/game/screens/gameplay_screen.dart';
 import 'package:star_shooter/features/home/screens/home_screen.dart';
 import 'package:star_shooter/features/home/screens/splash_screen.dart';
@@ -77,6 +78,11 @@ abstract final class AppRouter {
         path: AppRoutes.profile,
         name: AppRoutes.profileName,
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.dailyChallenge,
+        name: AppRoutes.dailyChallengeRouteName,
+        builder: (context, state) => const DailyChallengeScreen(),
       ),
     ],
   );

@@ -9,6 +9,7 @@ import 'package:star_shooter/core/widgets/cosmic_button.dart';
 import 'package:star_shooter/core/widgets/cosmic_card.dart';
 import 'package:star_shooter/data/billing/billing_notifier.dart';
 import 'package:star_shooter/domain/usecases/get_attempts_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/domain/usecases/get_today_challenge_usecase.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
 
 /// Main home / lobby screen.
@@ -25,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   AttemptInfo? _attemptInfo;
   bool _attemptsLoading = true;
+  TodayChallengeInfo? _challengeInfo;
 
   @override
   void initState() {
@@ -32,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GalaxyMapNotifier>().load();
       _loadAttempts();
+      _loadChallengeInfo();
     });
   }
 
@@ -43,6 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _attemptsLoading = false;
       });
     }
+  }
+
+  void _loadChallengeInfo() {
+    try {
+      final info = context.read<GetTodayChallengeUseCase>().call();
+      if (mounted) {
+        setState(() {
+          _challengeInfo = info;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -171,6 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
                 const SizedBox(height: AppSpacing.sm),
+
+                // ── Daily Challenge card ──────────────────────────────────
+                if (_challengeInfo != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  _DailyChallengeCard(info: _challengeInfo!),
+                ],
 
                 // ── Attempt indicator ─────────────────────────────────────
                 if (_attemptsLoading)
@@ -430,6 +450,95 @@ class _AttemptIndicator extends StatelessWidget {
             style: AppTextStyles.bodySmall.copyWith(color: color),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DailyChallengeCard extends StatelessWidget {
+  const _DailyChallengeCard({required this.info});
+
+  final TodayChallengeInfo info;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+      child: GestureDetector(
+        onTap: () => context.push(AppRoutes.dailyChallenge),
+        child: CosmicCard(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.buttonGradientStart,
+                      AppColors.buttonGradientEnd,
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.calendar_today_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'DAILY CHALLENGE',
+                          style:
+                              AppTextStyles.labelLarge.copyWith(fontSize: 11),
+                        ),
+                        const Spacer(),
+                        if (info.streak.currentStreak > 0)
+                          Text(
+                            '🔥 ${info.streak.currentStreak}',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.starFilled,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    if (info.todayCompleted)
+                      Text(
+                        '✓ Completed today',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.success),
+                      )
+                    else
+                      Text(
+                        info.challenge.objective.displayText,
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Icon(
+                info.todayCompleted
+                    ? Icons.check_circle_rounded
+                    : Icons.chevron_right_rounded,
+                color: info.todayCompleted
+                    ? AppColors.success
+                    : AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -20,6 +20,7 @@ abstract final class AppRoutes {
   static const String settings = '/settings';
   static const String premium = '/premium';
   static const String profile = '/profile';
+  static const String dailyChallenge = '/daily-challenge';
 
   // ── Named-route identifiers ────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ abstract final class AppRoutes {
   static const String settingsName = 'settings';
   static const String premiumName = 'premium';
   static const String profileName = 'profile';
+  static const String dailyChallengeRouteName = 'daily-challenge';
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

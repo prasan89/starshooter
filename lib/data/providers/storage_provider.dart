@@ -23,7 +23,18 @@ import 'package:star_shooter/domain/usecases/complete_level_usecase.dart';
 import 'package:star_shooter/domain/usecases/get_attempts_usecase.dart';
 import 'package:star_shooter/domain/usecases/get_world_progress_usecase.dart';
 import 'package:star_shooter/domain/usecases/start_level_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/data/local_daily_challenge_repository.dart';
+import 'package:star_shooter/features/daily_challenge/data/local_streak_repository.dart';
+import 'package:star_shooter/features/daily_challenge/domain/analytics/challenge_analytics.dart';
+import 'package:star_shooter/features/daily_challenge/domain/generators/daily_challenge_generator.dart';
+import 'package:star_shooter/features/daily_challenge/domain/repositories/daily_challenge_repository.dart';
+import 'package:star_shooter/features/daily_challenge/domain/repositories/streak_repository.dart';
+import 'package:star_shooter/features/daily_challenge/domain/usecases/complete_daily_challenge_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/domain/usecases/get_streak_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/domain/usecases/get_today_challenge_usecase.dart';
+import 'package:star_shooter/features/daily_challenge/presentation/state/daily_challenge_notifier.dart';
 import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
+import 'package:star_shooter/core/utils/game_clock.dart';
 
 /// Initialises the data layer and returns a list of [Provider]s that expose
 /// the repository interfaces to the widget tree.
@@ -146,6 +157,54 @@ Future<List<SingleChildWidget>> createDataProviders() async {
         dailyAttemptRepository: dailyAttemptRepo,
         premiumEntitlementRepository: premiumRepo,
       ),
+    ),
+
+    // ── M11: Daily Challenge ─────────────────────────────────────────────────
+    Provider<DailyChallengeGenerator>(
+      create: (_) => const DailyChallengeGenerator(),
+    ),
+
+    Provider<DailyChallengeRepository>(
+      create: (_) => LocalDailyChallengeRepository(storage: storage),
+    ),
+
+    Provider<StreakRepository>(
+      create: (_) => LocalStreakRepository(storage: storage),
+    ),
+
+    Provider<GameClock>(
+      create: (_) => const LocalGameClock(),
+    ),
+
+    Provider<ChallengeAnalytics>(
+      create: (_) => const NoOpChallengeAnalytics(),
+    ),
+
+    Provider<GetTodayChallengeUseCase>(
+      create: (ctx) => GetTodayChallengeUseCase(
+        generator: ctx.read<DailyChallengeGenerator>(),
+        challengeRepository: ctx.read<DailyChallengeRepository>(),
+        streakRepository: ctx.read<StreakRepository>(),
+        clock: ctx.read<GameClock>(),
+      ),
+    ),
+
+    Provider<CompleteDailyChallengeUseCase>(
+      create: (ctx) => CompleteDailyChallengeUseCase(
+        challengeRepository: ctx.read<DailyChallengeRepository>(),
+        streakRepository: ctx.read<StreakRepository>(),
+        clock: ctx.read<GameClock>(),
+      ),
+    ),
+
+    Provider<GetStreakUseCase>(
+      create: (ctx) => GetStreakUseCase(
+        streakRepository: ctx.read<StreakRepository>(),
+      ),
+    ),
+
+    ChangeNotifierProvider<DailyChallengeNotifier>(
+      create: (_) => DailyChallengeNotifier(),
     ),
   ];
 }
