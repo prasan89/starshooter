@@ -8,6 +8,7 @@ import 'package:star_shooter/core/theme/app_text_styles.dart';
 import 'package:star_shooter/core/widgets/cosmic_card.dart';
 import 'package:star_shooter/domain/models/player_settings.dart';
 import 'package:star_shooter/domain/repositories/player_repository.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Settings screen with toggles for audio and haptics.
 ///
@@ -161,7 +162,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.privacy_tip_rounded,
                 label: 'Privacy Policy',
                 onTap: () {
-                  // TODO: Open privacy policy URL
+                  launchUrl(
+                    Uri.parse(kPrivacyPolicyUrl),
+                    mode: LaunchMode.externalApplication,
+                  );
                 },
               ),
             ),

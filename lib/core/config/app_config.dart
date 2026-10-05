@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// App configuration values injected via `--dart-define` at build time.
 class AppConfig {
   AppConfig._();
@@ -5,7 +7,7 @@ class AppConfig {
   /// The current environment: `dev`, `staging`, or `prod`.
   static const String environment = String.fromEnvironment(
     'APP_ENV',
-    defaultValue: 'dev',
+    defaultValue: 'prod',
   );
 
   /// The display name for the application.
@@ -14,12 +16,15 @@ class AppConfig {
     defaultValue: 'Star Shooter',
   );
 
-  /// `true` when running in the development environment.
-  static bool get isDev => environment == 'dev';
+  /// `true` when running in a debug/development build.
+  ///
+  /// Uses Flutter's [kDebugMode] so that release builds automatically
+  /// disable debug logging without requiring a `--dart-define` flag.
+  static bool get isDev => kDebugMode;
 
   /// `true` when running in the staging environment.
   static bool get isStaging => environment == 'staging';
 
   /// `true` when running in the production environment.
-  static bool get isProd => environment == 'prod';
+  static bool get isProd => !kDebugMode;
 }

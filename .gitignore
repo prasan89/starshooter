@@ -36,3 +36,5 @@ google-services.json
 android/.gradle/
 .flutter-plugins-dependencies
 android/local.properties
+android/key.properties
+*.jks

@@ -1,11 +1,13 @@
 // App-wide constants
 const String kAppName = 'Star Shooter';
 const String kAppVersion = '1.0.0';
+const String kPrivacyPolicyUrl =
+    'https://prasan89.github.io/starshooter/privacy-policy.html';
 
 // Game constants
 const int kMaxStarsPerLevel = 3;
 const int kDailyFreeAttempts = 5;
-const int kTotalGalaxyLevels = 100;
+const int kTotalGalaxyLevels = 200;
 
 // Timing
 const Duration kSplashDuration = Duration(seconds: 2);
