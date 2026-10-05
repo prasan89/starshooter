@@ -10,6 +10,9 @@ import 'package:star_shooter/data/repositories/player_repository_impl.dart';
 import 'package:star_shooter/domain/repositories/entitlement_repository.dart';
 import 'package:star_shooter/domain/repositories/level_repository.dart';
 import 'package:star_shooter/domain/repositories/player_repository.dart';
+import 'package:star_shooter/domain/usecases/complete_level_usecase.dart';
+import 'package:star_shooter/domain/usecases/get_world_progress_usecase.dart';
+import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
 
 /// Initialises the data layer and returns a list of [Provider]s that expose
 /// the repository interfaces to the widget tree.
@@ -36,6 +39,34 @@ Future<List<SingleChildWidget>> createDataProviders() async {
     ),
     Provider<EntitlementRepository>(
       create: (_) => EntitlementRepositoryImpl(storage),
+    ),
+    ProxyProvider<LevelRepository, GetWorldProgressUseCase>(
+      create: (ctx) => GetWorldProgressUseCase(ctx.read<LevelRepository>()),
+      update: (_, repo, __) => GetWorldProgressUseCase(repo),
+    ),
+    ChangeNotifierProxyProvider2<LevelRepository, GetWorldProgressUseCase,
+        GalaxyMapNotifier>(
+      create: (ctx) => GalaxyMapNotifier(
+        levelRepository: ctx.read<LevelRepository>(),
+        worldProgressUseCase: ctx.read<GetWorldProgressUseCase>(),
+      ),
+      update: (_, levelRepo, worldUseCase, previous) {
+        return previous ??
+            GalaxyMapNotifier(
+              levelRepository: levelRepo,
+              worldProgressUseCase: worldUseCase,
+            );
+      },
+    ),
+    ProxyProvider2<LevelRepository, PlayerRepository, CompleteLevelUseCase>(
+      create: (ctx) => CompleteLevelUseCase(
+        levelRepository: ctx.read<LevelRepository>(),
+        playerRepository: ctx.read<PlayerRepository>(),
+      ),
+      update: (_, levelRepo, playerRepo, __) => CompleteLevelUseCase(
+        levelRepository: levelRepo,
+        playerRepository: playerRepo,
+      ),
     ),
   ];
 }

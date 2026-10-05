@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/theme/app_spacing.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
 import 'package:star_shooter/core/widgets/cosmic_button.dart';
 import 'package:star_shooter/core/widgets/cosmic_card.dart';
+import 'package:star_shooter/features/galaxy/state/galaxy_map_notifier.dart';
 
 /// Main home / lobby screen.
 ///
 /// Displays the app title, player stats at a glance, and primary navigation
 /// actions. All routes are driven by [GoRouter].
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GalaxyMapNotifier>().load();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final notifier = context.watch<GalaxyMapNotifier>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -83,14 +100,49 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: AppSpacing.xxl),
 
-                // ── Primary action button ──────────────────────────────────
+                // ── Primary action button (Continue) ──────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xxl,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CosmicButton(
+                        label: 'CONTINUE',
+                        icon: Icons.rocket_launch_rounded,
+                        onPressed: () => context.push(
+                          AppRoutes.gameplayPath(
+                            notifier.currentLevelId.toString(),
+                          ),
+                        ),
+                      ),
+                      if (!notifier.isLoading) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Level ${notifier.currentLevelId}'
+                          '${notifier.currentLevel?.worldMeta?.worldName != null ? ' · ${notifier.currentLevel!.worldMeta!.worldName}' : ''}',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.md),
+
+                // ── Galaxy Map secondary button ────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.xxl,
                   ),
                   child: CosmicButton(
-                    label: 'PLAY',
-                    icon: Icons.rocket_launch_rounded,
+                    label: 'GALAXY MAP',
+                    icon: Icons.map_rounded,
+                    variant: CosmicButtonVariant.secondary,
                     onPressed: () => context.push(AppRoutes.galaxyMap),
                   ),
                 ),
@@ -100,11 +152,11 @@ class HomeScreen extends StatelessWidget {
                 const Spacer(),
 
                 // ── Player stats ──────────────────────────────────────────
-                const Padding(
-                  padding: EdgeInsets.symmetric(
+                Padding(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                   ),
-                  child: _PlayerStatsRow(),
+                  child: _PlayerStatsRow(notifier: notifier),
                 ),
 
                 const SizedBox(height: AppSpacing.xl),
@@ -191,12 +243,36 @@ class _CosmicTitle extends StatelessWidget {
 }
 
 class _PlayerStatsRow extends StatelessWidget {
-  const _PlayerStatsRow();
+  const _PlayerStatsRow({required this.notifier});
+
+  final GalaxyMapNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
-    return const CosmicCard(
-      padding: EdgeInsets.symmetric(
+    final isLoading = notifier.isLoading;
+
+    final levelValue = isLoading ? '...' : notifier.currentLevelId.toString();
+
+    final totalStars = isLoading
+        ? 0
+        : notifier.worldProgress.fold<int>(
+            0,
+            (sum, wp) => sum + wp.totalStars,
+          );
+    final starsValue = isLoading ? '...' : totalStars.toString();
+
+    final completedWorlds = isLoading
+        ? 0
+        : notifier.worldProgress
+            .where(
+              (wp) =>
+                  wp.completedLevels == wp.totalLevels && wp.totalLevels > 0,
+            )
+            .length;
+    final worldsValue = isLoading ? '... / 5' : '$completedWorlds / 5';
+
+    return CosmicCard(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
       ),
@@ -206,19 +282,19 @@ class _PlayerStatsRow extends StatelessWidget {
           _StatItem(
             icon: Icons.military_tech_rounded,
             label: 'Level',
-            value: '1',
+            value: levelValue,
           ),
-          _Divider(),
+          const _Divider(),
           _StatItem(
             icon: Icons.star_rounded,
             label: 'Stars',
-            value: '0',
+            value: starsValue,
           ),
-          _Divider(),
+          const _Divider(),
           _StatItem(
             icon: Icons.emoji_events_rounded,
             label: 'Worlds',
-            value: '0 / 5',
+            value: worldsValue,
           ),
         ],
       ),
