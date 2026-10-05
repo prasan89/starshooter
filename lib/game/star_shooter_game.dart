@@ -15,6 +15,7 @@ import 'package:star_shooter/game/level/level_catalog.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
 import 'package:star_shooter/game/models/star_type.dart';
+import 'package:star_shooter/game/models/shooter_game_state.dart';
 import 'package:star_shooter/game/services/audio_service.dart';
 import 'package:star_shooter/game/services/haptic_service.dart';
 import 'package:star_shooter/game/special/black_hole_effect.dart';
@@ -182,7 +183,9 @@ class StarShooterGame extends FlameGame
   void onDragUpdate(DragUpdateEvent event) {
     super.onDragUpdate(event);
     if (!_isDragging) return;
-    final dir = _computeAimDir(event.canvasStartPosition);
+    // Always aim from the latest pointer position. Using canvasStartPosition
+    // here freezes the aim to the drag origin and makes the shooter feel broken.
+    final dir = _computeAimDir(event.canvasPosition);
     _aimDirection = dir;
     _trajectory.showTrajectory(
       from: _shooter.launcherWorldCenter,
@@ -203,6 +206,17 @@ class StarShooterGame extends FlameGame
 
   /// Fires the current star in the aim direction.
   void shootProjectile() {
+    // One input gesture must produce exactly one shot. Keep the game manager
+    // and turn system in sync before the projectile enters the game loop.
+    if (_isDragging || !turnSystem.canShoot || !gameManager.isPlaying) return;
+    if (gameManager.shooterState != ShooterGameState.ready) return;
+    if (_aimDirection.isZero()) return;
+
+    _isDragging = false;
+    turnSystem.shoot();
+    gameManager.updateShooterState(ShooterGameState.shooting);
+    gameManager.onShot();
+
     final currentType = gameManager.currentStarType;
     final model = StarModel.projectile(
       type: currentType,
@@ -210,15 +224,15 @@ class StarShooterGame extends FlameGame
     );
     final projectile = ProjectileComponent(
       model: model,
-      direction: _aimDirection,
-    );
-    projectile.position = _shooter.launcherWorldCenter.clone();
+      direction: _aimDirection.clone(),
+    )..position = _shooter.launcherWorldCenter.clone();
+
     audioService.playShoot();
     hapticService.onShoot();
     add(projectile);
-    gameManager.onShot();
-    turnSystem.shoot();
-    _trajectory.setTintColor(StarColor.fromIndex(gameManager.currentColorIndex).color);
+    _trajectory.setTintColor(
+      StarColor.fromIndex(gameManager.currentColorIndex).color,
+    );
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
