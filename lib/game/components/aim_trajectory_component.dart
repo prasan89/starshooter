@@ -136,5 +136,4 @@ class AimTrajectoryComponent extends Component
       canvas.restore();
     }
   }
-  }
 }
