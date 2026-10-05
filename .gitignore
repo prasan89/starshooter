@@ -1,0 +1,35 @@
+# Dart tool artifacts
+.dart_tool/
+.packages
+
+# Build output
+build/
+
+# IDE files
+*.iml
+.idea/
+# Keep .vscode/settings.json if desired — uncomment the next line to exclude everything:
+# .vscode/
+# To keep only settings.json, ignore the folder but un-ignore that file:
+.vscode/
+!.vscode/settings.json
+
+# Non-Android platform directories (Android-only project)
+ios/
+web/
+macos/
+linux/
+windows/
+
+# Environment and secrets
+.env
+.env.*
+*.jks
+*.keystore
+google-services.json
+
+# Generated Dart files
+*.g.dart
+*.freezed.dart
+
+# Note: pubspec.lock is intentionally NOT ignored for apps (only libraries omit it)
