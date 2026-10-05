@@ -187,7 +187,9 @@ class GameManager extends ChangeNotifier {
 
   /// Transitions to the game-over state (no shots remaining).
   void gameOver() {
-    if (_state == GameState.gameOver) return;
+    // A successful objective/board clear is terminal success and must never
+    // be overwritten by a later failure-boundary check from the same shot.
+    if (_state == GameState.gameOver || _state == GameState.levelComplete) return;
     _state = GameState.gameOver;
     notifyListeners();
   }
