@@ -9,6 +9,7 @@ import 'package:star_shooter/game/components/game_board_component.dart';
 import 'package:star_shooter/game/components/projectile_component.dart';
 import 'package:star_shooter/game/components/shooter_component.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
+import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
 import 'package:star_shooter/game/systems/turn_system.dart';
 
@@ -29,11 +30,14 @@ class StarShooterGame extends FlameGame
   final GameManager gameManager = GameManager();
   final TurnSystem turnSystem = TurnSystem();
 
+  LevelDefinition? _currentLevelDef;
+
   // ── Public accessors ────────────────────────────────────────────────────────
 
   GameBoardComponent get board => _board;
   ShooterComponent get shooter => _shooter;
   AimTrajectoryComponent get trajectory => _trajectory;
+  LevelDefinition? get currentLevelDef => _currentLevelDef;
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────
 
@@ -47,7 +51,8 @@ class StarShooterGame extends FlameGame
     // Layer order (priority): background(-10) < board(0) < shooter(5).
     await add(CosmicBackgroundComponent());
 
-    _board = GameBoardComponent();
+    _currentLevelDef = LevelDefinition.forLevel(1);
+    _board = GameBoardComponent(levelDef: _currentLevelDef);
     await add(_board);
 
     _shooter = ShooterComponent();

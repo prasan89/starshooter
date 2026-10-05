@@ -78,6 +78,18 @@ class _TopBar extends StatelessWidget {
 
               const SizedBox(width: 12),
 
+              // Combo indicator — visible only when combo > 1
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: manager.hasActiveCombo
+                    ? Padding(
+                        key: ValueKey(manager.comboLevel),
+                        padding: const EdgeInsets.only(right: 12),
+                        child: _ComboChip(comboLevel: manager.comboLevel),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+
               // Remaining shots — "used/total" format
               _HudChip(
                 icon: Icons.bubble_chart_rounded,
@@ -169,6 +181,36 @@ class _HudChip extends StatelessWidget {
           const SizedBox(width: 3),
           Text(label, style: AppTextStyles.labelLarge),
         ],
+      ),
+    );
+  }
+}
+
+// ── Combo chip ────────────────────────────────────────────────────────────────
+
+class _ComboChip extends StatelessWidget {
+  const _ComboChip({required this.comboLevel});
+
+  final int comboLevel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF6B35), Color(0xFFFF1493)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        'x$comboLevel COMBO',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

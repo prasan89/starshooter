@@ -97,5 +97,35 @@ void main() {
 
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
+
+    test('cannot shoot while resolving', () {
+      final ts = TurnSystem()
+        ..initialize(5)
+        ..shoot();
+      // Now in shooting state — onProjectileLanded moves to resolving
+      ts.onProjectileLanded();
+      expect(ts.canShoot, isFalse);
+      expect(ts.state, ShooterGameState.resolving);
+      ts.dispose();
+    });
+
+    test('resolving completes to ready state', () {
+      final ts = TurnSystem()
+        ..initialize(5)
+        ..shoot();
+      ts.onProjectileLanded();
+      ts.onResolvingComplete(scoreGained: 100);
+      expect(ts.state, ShooterGameState.ready);
+      ts.dispose();
+    });
+
+    test('failure state when moves exhausted', () {
+      final ts = TurnSystem()..initialize(1);
+      ts.shoot(); // uses last move
+      ts.onProjectileLanded();
+      ts.onResolvingComplete();
+      expect(ts.state, ShooterGameState.gameFailed);
+      ts.dispose();
+    });
   });
 }

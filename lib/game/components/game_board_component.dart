@@ -1,9 +1,13 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:star_shooter/game/components/pop_animation_component.dart';
 import 'package:star_shooter/game/components/star_component.dart';
 import 'package:star_shooter/game/models/board_grid.dart';
+import 'package:star_shooter/game/models/grid_position.dart';
+import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
+import 'package:star_shooter/game/services/board_resolver.dart';
 import 'package:star_shooter/game/star_shooter_game.dart';
 
 /// The real game-board Flame component for Star Shooter.
@@ -21,8 +25,9 @@ class GameBoardComponent extends PositionComponent
   final List<StarComponent> _starComponents = [];
   Rect _boardRect = Rect.zero;
 
-  GameBoardComponent()
-      : _grid = BoardGrid.initialBoard(rows: 5),
+  GameBoardComponent({LevelDefinition? levelDef})
+      : _grid =
+            (levelDef?.buildInitialBoard()) ?? BoardGrid.initialBoard(rows: 5),
         super(priority: 0);
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -89,19 +94,89 @@ class GameBoardComponent extends PositionComponent
     }
   }
 
+  // ── Resolution ─────────────────────────────────────────────────────────────
+
+  Future<void> _applyResolution(
+      ResolutionResult result, GridPosition placedPos,) async {
+    // Spawn pop animations for matched stars.
+    for (final group in result.matchedGroups) {
+      for (final pos in group) {
+        final pixel = _grid.gridToPixel(pos, _boardRect);
+        final star = _grid.starAt(pos);
+        if (star != null) {
+          final anim = PopAnimationComponent(
+            position: Vector2(pixel.dx, pixel.dy),
+            color: star.type.color,
+          );
+          game.add(anim);
+        }
+      }
+    }
+    // Spawn pop animations for floating stars.
+    for (final pos in result.floatingStars) {
+      final pixel = _grid.gridToPixel(pos, _boardRect);
+      final star = _grid.starAt(pos);
+      if (star != null) {
+        final anim = PopAnimationComponent(
+          position: Vector2(pixel.dx, pixel.dy),
+          color: star.type.color,
+        );
+        game.add(anim);
+      }
+    }
+    // Update grid to final resolved state.
+    _grid = result.finalBoard;
+    await _syncStarsToBoard();
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
 
   /// Places a projectile star at the grid cell nearest to [pixelPos].
   ///
-  /// If the resolved cell is invalid or already occupied the call is a no-op.
-  Future<void> placeProjectile(StarModel star, Offset pixelPos) async {
+  /// Triggers full board resolution (match detection, floating-cluster removal,
+  /// pop animations). Returns the [ResolutionResult] or `null` if no valid cell
+  /// was available.
+  Future<ResolutionResult?> placeProjectile(
+      StarModel star, Offset pixelPos,) async {
     final gridPos = _grid.pixelToGrid(pixelPos, _boardRect);
     if (!_grid.isValidPosition(gridPos) || _grid.isOccupied(gridPos)) {
-      return;
+      // Try neighbours — find the closest valid unoccupied cell.
+      GridPosition? bestPos;
+      double bestDist = double.infinity;
+      for (int dr = -1; dr <= 1; dr++) {
+        for (int dc = -1; dc <= 1; dc++) {
+          if (dr == 0 && dc == 0) continue;
+          final candidate = GridPosition(gridPos.row + dr, gridPos.col + dc);
+          if (_grid.isValidPosition(candidate) &&
+              !_grid.isOccupied(candidate)) {
+            final pixel = _grid.gridToPixel(candidate, _boardRect);
+            final dx = pixelPos.dx - pixel.dx;
+            final dy = pixelPos.dy - pixel.dy;
+            final d = dx * dx + dy * dy;
+            if (d < bestDist) {
+              bestDist = d;
+              bestPos = candidate;
+            }
+          }
+        }
+      }
+      if (bestPos == null) return null;
+      final placed = star.copyWith(gridPosition: bestPos);
+      _grid = _grid.placeStar(placed, bestPos);
+      final result = BoardResolver.resolve(board: _grid, placedPos: bestPos);
+      await _applyResolution(result, bestPos);
+      return result;
     }
     final placed = star.copyWith(gridPosition: gridPos);
     _grid = _grid.placeStar(placed, gridPos);
-    await _syncStarsToBoard();
+    final result = BoardResolver.resolve(board: _grid, placedPos: gridPos);
+    await _applyResolution(result, gridPos);
+    return result;
+  }
+
+  /// Returns `true` when any star has reached or passed [boundaryRow].
+  bool isFailureBoundaryReached(int boundaryRow) {
+    return _grid.occupiedPositions.any((pos) => pos.row >= boundaryRow);
   }
 
   BoardGrid get grid => _grid;

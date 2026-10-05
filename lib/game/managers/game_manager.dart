@@ -41,6 +41,12 @@ class GameManager extends ChangeNotifier {
   StarType _nextStarType = StarType.normal;
   ShooterGameState _shooterState = ShooterGameState.ready;
 
+  // ── Combo / scoring fields ────────────────────────────────────────────────
+
+  int _comboLevel = 0;
+  bool _boardCleared = false;
+  int _totalStarsPopped = 0;
+
   // ── Getters ──────────────────────────────────────────────────────────────
 
   GameState get state => _state;
@@ -61,6 +67,11 @@ class GameManager extends ChangeNotifier {
   StarType get currentStarType => _currentStarType;
   StarType get nextStarType => _nextStarType;
   ShooterGameState get shooterState => _shooterState;
+
+  int get comboLevel => _comboLevel;
+  bool get hasActiveCombo => _comboLevel > 1;
+  bool get boardCleared => _boardCleared;
+  int get totalStarsPopped => _totalStarsPopped;
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -89,6 +100,9 @@ class GameManager extends ChangeNotifier {
     _currentStarType = StarType.normal;
     _nextStarType = StarType.normal;
     _shooterState = ShooterGameState.ready;
+    _comboLevel = 0;
+    _boardCleared = false;
+    _totalStarsPopped = 0;
     _state = GameState.playing;
     notifyListeners();
   }
@@ -142,6 +156,9 @@ class GameManager extends ChangeNotifier {
     _currentStarType = StarType.normal;
     _nextStarType = StarType.normal;
     _shooterState = ShooterGameState.ready;
+    _comboLevel = 0;
+    _boardCleared = false;
+    _totalStarsPopped = 0;
     notifyListeners();
   }
 
@@ -176,6 +193,31 @@ class GameManager extends ChangeNotifier {
   void advanceTurn(StarType nextCurrent, StarType nextNext) {
     _currentStarType = nextCurrent;
     _nextStarType = nextNext;
+    notifyListeners();
+  }
+
+  /// Updates the active combo level and notifies listeners.
+  void updateCombo(int level) {
+    _comboLevel = level;
+    notifyListeners();
+  }
+
+  /// Called when a shot's full resolution (matches + cascades + floating removal)
+  /// is complete. Updates score, combo, pop counts, and board-cleared flag.
+  void onResolutionComplete({
+    required int scoreGained,
+    required int comboLevel,
+    required int starsPopped,
+    required int floatingDropped,
+    required bool boardCleared,
+  }) {
+    _score += scoreGained;
+    _comboLevel = comboLevel;
+    _totalStarsPopped += starsPopped + floatingDropped;
+    _boardCleared = boardCleared;
+    if (boardCleared) {
+      _state = GameState.levelComplete;
+    }
     notifyListeners();
   }
 }

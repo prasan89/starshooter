@@ -1,9 +1,11 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/shooter_game_state.dart';
 import 'package:star_shooter/game/models/star_model.dart';
+import 'package:star_shooter/game/models/star_type.dart';
 import 'package:star_shooter/game/star_shooter_game.dart';
 import 'package:star_shooter/game/systems/collision_system.dart';
 
@@ -86,7 +88,6 @@ class ProjectileComponent extends PositionComponent
 
   void _landAt(Vector2 pos) {
     if (!_active) return;
-    _active = false;
     final board = game.board;
     final snapGrid =
         board.grid.pixelToGrid(Offset(pos.x, pos.y), board.boardRect);
@@ -96,25 +97,53 @@ class ProjectileComponent extends PositionComponent
   void _placeAtGrid(GridPosition gridPos) {
     if (!_active) return;
     _active = false;
-    final board = game.board;
-
-    // Place on board.
-    board.placeProjectile(_model, Offset(position.x, position.y));
-
-    // Notify turn system.
-    game.gameManager.updateShooterState(ShooterGameState.resolving);
-
-    // Advance turn.
-    game.gameManager.advanceTurn(
-      game.gameManager.nextStarType,
-      game.gameManager.currentStarType,
-    );
-    game.shooter.loadStars(
-      game.gameManager.currentStarType,
-      game.gameManager.nextStarType,
-    );
-    game.gameManager.updateShooterState(ShooterGameState.ready);
+    // Start async resolution without blocking the update loop.
+    _resolveAsync();
     removeFromParent();
+  }
+
+  Future<void> _resolveAsync() async {
+    final board = game.board;
+    final gm = game.gameManager;
+    final ts = game.turnSystem;
+
+    // Tell state machine: resolving
+    gm.updateShooterState(ShooterGameState.resolving);
+    ts.onProjectileLanded();
+
+    // Run board resolution (includes match + gravity + cascade)
+    final result =
+        await board.placeProjectile(_model, Offset(position.x, position.y));
+
+    // Apply scoring result
+    if (result != null) {
+      final starsPopped =
+          result.matchedGroups.fold(0, (sum, g) => sum + g.length);
+      gm.onResolutionComplete(
+        scoreGained: result.scoreGained,
+        comboLevel: result.comboLevel,
+        starsPopped: starsPopped,
+        floatingDropped: result.floatingStars.length,
+        boardCleared: result.boardCleared,
+      );
+      ts.onResolvingComplete(scoreGained: result.scoreGained);
+    } else {
+      ts.onResolvingComplete();
+    }
+
+    // Check failure boundary
+    final levelDef = game.currentLevelDef;
+    if (levelDef != null &&
+        board.isFailureBoundaryReached(levelDef.failureBoundaryRow)) {
+      gm.gameOver();
+    }
+
+    // Advance launcher to next star (if game not over/complete)
+    if (!gm.boardCleared && gm.state == GameState.playing) {
+      gm.advanceTurn(gm.nextStarType, StarType.normal);
+      game.shooter.loadStars(gm.currentStarType, gm.nextStarType);
+      gm.updateShooterState(ShooterGameState.ready);
+    }
   }
 
   @override
