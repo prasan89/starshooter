@@ -28,7 +28,7 @@ class HomeScreen extends StatelessWidget {
                 center: Alignment.topCenter,
                 radius: 1.4,
                 colors: [
-                  Color(0xFF1A1E3A),
+                  AppColors.surfaceHighlight,
                   AppColors.background,
                 ],
               ),
@@ -285,7 +285,7 @@ class _PremiumBadge extends StatelessWidget {
           gradient: const LinearGradient(
             colors: [
               AppColors.starFilled,
-              Color(0xFFF59E0B),
+              AppColors.starFilled,
             ],
           ),
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),

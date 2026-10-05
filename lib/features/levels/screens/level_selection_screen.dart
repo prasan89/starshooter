@@ -39,7 +39,7 @@ class LevelSelectionScreen extends StatelessWidget {
               gradient: RadialGradient(
                 center: Alignment.topCenter,
                 radius: 1.2,
-                colors: [Color(0xFF1A1E3A), AppColors.background],
+                colors: [AppColors.surfaceHighlight, AppColors.background],
               ),
             ),
           ),

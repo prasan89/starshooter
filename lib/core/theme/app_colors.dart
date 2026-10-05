@@ -11,6 +11,12 @@ abstract final class AppColors {
   /// Card / surface layer — slightly lighter than background.
   static const Color surface = Color(0xFF141828);
 
+  /// Surface highlight — used for gradients and hover states.
+  static const Color surfaceHighlight = Color(0xFF1A1E3A);
+
+  /// Deep premium background — very dark for premium/special screens.
+  static const Color deepBackground = Color(0xFF1A0A2E);
+
   // ── Accents ───────────────────────────────────────────────────────────────
   /// Primary accent — cosmic blue.
   static const Color primary = Color(0xFF4A90E2);
@@ -48,6 +54,22 @@ abstract final class AppColors {
 
   /// Gradient end colour for primary buttons (nebula purple).
   static const Color buttonGradientEnd = Color(0xFF8B5CF6);
+
+  // ── World palette ─────────────────────────────────────────────────────────
+  /// World 2 gradient end — nebula pink.
+  static const Color world2GradientEnd = Color(0xFFEC4899);
+
+  /// World 3 gradient start — cyan.
+  static const Color world3GradientStart = Color(0xFF06B6D4);
+
+  /// World 4 gradient start — red.
+  static const Color world4GradientStart = Color(0xFFEF4444);
+
+  /// World 4 gradient end — amber.
+  static const Color world4GradientEnd = Color(0xFFF59E0B);
+
+  /// World 5 (locked) gradient start — dark navy.
+  static const Color world5GradientStart = Color(0xFF111827);
 
   // ── Shimmer ───────────────────────────────────────────────────────────────
   /// Base colour for shimmer loading effect.

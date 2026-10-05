@@ -47,7 +47,7 @@ class _TopBar extends StatelessWidget {
         color: AppColors.background.withValues(alpha: 0.75),
         border: const Border(
           bottom: BorderSide(
-            color: Color(0xFF4A90E2), // AppColors.primary
+            color: AppColors.primary,
             width: 0.5,
           ),
         ),

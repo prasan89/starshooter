@@ -28,7 +28,7 @@ class GameplayScreen extends StatelessWidget {
                 center: Alignment.center,
                 radius: 1.0,
                 colors: [
-                  Color(0xFF0A1020),
+                  AppColors.background,
                   Colors.black,
                 ],
               ),

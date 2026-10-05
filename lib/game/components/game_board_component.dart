@@ -24,7 +24,7 @@ class GameBoardComponent extends PositionComponent {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF4A90E2), // AppColors.primary — plain const here
+          color: AppColors.primary,
           letterSpacing: 1.5,
         ),
       ),

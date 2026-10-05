@@ -34,7 +34,7 @@ class PremiumScreen extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF1A0A2E),
+                  AppColors.deepBackground,
                   AppColors.background,
                 ],
               ),
@@ -156,7 +156,7 @@ class _PremiumHeader extends StatelessWidget {
 
         ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
-            colors: [AppColors.starFilled, Color(0xFFF59E0B)],
+            colors: [AppColors.starFilled, AppColors.world4GradientEnd],
           ).createShader(bounds),
           child: Text(
             'STAR SHOOTER\nPREMIUM',

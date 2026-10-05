@@ -41,7 +41,7 @@ class GalaxyMapScreen extends StatelessWidget {
               gradient: RadialGradient(
                 center: Alignment.topCenter,
                 radius: 1.2,
-                colors: [Color(0xFF1A1E3A), AppColors.background],
+                colors: [AppColors.surfaceHighlight, AppColors.background],
               ),
             ),
           ),
@@ -102,11 +102,11 @@ class _WorldTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   static const _gradients = [
-    [Color(0xFF4A90E2), Color(0xFF8B5CF6)],
-    [Color(0xFF8B5CF6), Color(0xFFEC4899)],
-    [Color(0xFF06B6D4), Color(0xFF4A90E2)],
-    [Color(0xFFEF4444), Color(0xFFF59E0B)],
-    [Color(0xFF111827), Color(0xFF374151)],
+    [AppColors.primary, AppColors.secondary],
+    [AppColors.secondary, AppColors.world2GradientEnd],
+    [AppColors.world3GradientStart, AppColors.primary],
+    [AppColors.world4GradientStart, AppColors.world4GradientEnd],
+    [AppColors.world5GradientStart, AppColors.starEmpty],
   ];
 
   @override
@@ -160,7 +160,7 @@ class _WorldTile extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: isLocked
                           ? const LinearGradient(
-                              colors: [Color(0xFF374151), Color(0xFF374151)],
+                              colors: [AppColors.starEmpty, AppColors.starEmpty],
                             )
                           : LinearGradient(colors: gradientColors),
                     ),

@@ -53,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (v) => setState(() => _musicEnabled = v),
                   ),
                   const Divider(
-                    color: Color(0xFF1E2538),
+                    color: AppColors.shimmerBase,
                     height: 1,
                     indent: AppSpacing.md,
                     endIndent: AppSpacing.md,

@@ -92,13 +92,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Stars Collected',
                     value: '$_totalStars',
                   ),
-                  const Divider(color: Color(0xFF1E2538), height: 24),
+                  const Divider(color: AppColors.shimmerBase, height: 24),
                   _StatRow(
                     icon: Icons.check_circle_outline_rounded,
                     label: 'Levels Completed',
                     value: '$_levelsCompleted',
                   ),
-                  const Divider(color: Color(0xFF1E2538), height: 24),
+                  const Divider(color: AppColors.shimmerBase, height: 24),
                   _StatRow(
                     icon: Icons.emoji_events_rounded,
                     label: 'Worlds Unlocked',
