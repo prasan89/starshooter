@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/data/billing/play_billing_entitlement_repository.dart';
 import 'package:star_shooter/domain/config/billing_config.dart';
 import 'package:star_shooter/domain/models/premium_product.dart';
@@ -23,13 +24,16 @@ class BillingNotifier extends ChangeNotifier {
     required BillingRepository billingRepository,
     required PlayBillingEntitlementRepository entitlementRepository,
     required BillingConfig config,
+    required AnalyticsService analytics,
   })  : _billing = billingRepository,
         _entitlement = entitlementRepository,
-        _config = config;
+        _config = config,
+        _analytics = analytics;
 
   final BillingRepository _billing;
   final PlayBillingEntitlementRepository _entitlement;
   final BillingConfig _config;
+  final AnalyticsService _analytics;
 
   BillingUiState _uiState = BillingUiState.loading;
   PremiumProduct? _product;
@@ -90,12 +94,19 @@ class BillingNotifier extends ChangeNotifier {
               ? 'restored'
               : 'google_play',
         );
+        // Analytics: fire purchase_completed or restore_completed
+        final productId = result.productId ?? _config.premiumProductId;
+        if (result.status == PurchaseStatus.restored) {
+          _analytics.restoreCompleted(productId);
+        } else {
+          _analytics.purchaseCompleted(productId);
+        }
         notifyListeners();
       case PurchaseStatus.pending:
         _uiState = BillingUiState.pending;
         notifyListeners();
       case PurchaseStatus.cancelled:
-        // Keep user on available state — cancellation is not an error
+        // Cancellation is not a failure — no analytics event.
         if (_uiState == BillingUiState.pending) {
           _uiState = _product != null
               ? BillingUiState.available
@@ -105,6 +116,10 @@ class BillingNotifier extends ChangeNotifier {
       case PurchaseStatus.error:
         _uiState = BillingUiState.error;
         _errorMessage = result.errorMessage ?? 'An unexpected error occurred.';
+        _analytics.purchaseFailed(
+          result.productId ?? _config.premiumProductId,
+          'billing_error',
+        );
         notifyListeners();
     }
   }
@@ -113,12 +128,16 @@ class BillingNotifier extends ChangeNotifier {
     if (_uiState != BillingUiState.available) return;
     _uiState = BillingUiState.pending;
     notifyListeners();
+    // Analytics: fire before the platform call so we capture intent even
+    // if the app is backgrounded during the purchase flow.
+    _analytics.purchaseStarted(_config.premiumProductId);
     final result = await _billing.initiatePurchase(_config.premiumProductId);
     result.when(
       onSuccess: (_) {},
       onFailure: (f) {
         _uiState = BillingUiState.error;
         _errorMessage = f.message;
+        _analytics.purchaseFailed(_config.premiumProductId, 'initiate_failed');
         notifyListeners();
       },
     );
@@ -127,6 +146,7 @@ class BillingNotifier extends ChangeNotifier {
   Future<void> restore() async {
     _uiState = BillingUiState.pending;
     notifyListeners();
+    _analytics.restoreStarted();
     await _entitlement.refreshFromBilling();
     // Result arrives via purchaseStream listener — no direct state update here
   }

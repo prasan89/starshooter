@@ -4,6 +4,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/domain/config/daily_attempt_config.dart';
@@ -68,16 +69,35 @@ class _GameplayScreenState extends State<GameplayScreen> {
     });
   }
 
+  int _worldIdForLevel(int levelId) =>
+      LevelCatalog.getLevelById(levelId)?.worldMeta?.worldId ?? 1;
+
   Future<void> _checkAndConsumeAttempt() async {
     final useCase = context.read<StartLevelUseCase>();
     final result = await useCase(levelId: widget.levelId);
     if (!mounted) return;
     if (result.isAllowed) {
+      final analytics = context.read<AnalyticsService>();
+      analytics.levelStarted(
+        widget.levelId,
+        _worldIdForLevel(widget.levelId),
+        isPremium: result.isPremium,
+      );
+      if (!result.isPremium) {
+        analytics.attemptConsumed(
+          widget.levelId,
+          attemptsRemaining: result.attemptsRemaining ?? 0,
+          isPremium: false,
+        );
+      }
       _initGame();
       setState(() {
         _attemptGranted = true;
       });
     } else if (result.status == StartLevelStatus.dailyLimitReached) {
+      if (mounted) {
+        context.read<AnalyticsService>().dailyLimitReached(widget.levelId);
+      }
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (_, anim, __) => FadeTransition(
@@ -182,6 +202,16 @@ class _GameplayScreenState extends State<GameplayScreen> {
     await context.read<GalaxyMapNotifier>().refresh();
     if (!mounted) return;
 
+    // Analytics: level completed + milestone check.
+    context.read<AnalyticsService>().levelCompleted(
+          widget.levelId,
+          _worldIdForLevel(widget.levelId),
+          gm.score,
+          savedProgress.stars,
+          shotsUsed,
+          gm.comboLevel,
+        );
+
     final isNewBest = gm.score > previousBestScore;
 
     // M11: Daily challenge hook — if this game started from a daily challenge,
@@ -276,6 +306,17 @@ class _GameplayScreenState extends State<GameplayScreen> {
       onFailure: (_) => LevelProgress.empty(widget.levelId),
     );
 
+    // Analytics: level failed.
+    if (mounted) {
+      context.read<AnalyticsService>().levelFailed(
+            widget.levelId,
+            _worldIdForLevel(widget.levelId),
+            gm.score,
+            gm.movesTotal - gm.movesRemaining,
+            failureReason: 'shots_exhausted',
+          );
+    }
+
     final levelDef = LevelCatalog.getLevelById(widget.levelId);
     final objective = levelDef?.objective;
 
@@ -304,6 +345,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   // ── Restart ─────────────────────────────────────────────────────────────────
 
   void _handleRestart() {
+    context.read<AnalyticsService>().levelRestarted(widget.levelId);
     _game.gameManager.removeListener(_onGameStateChanged);
     _game.onRemove();
     setState(_initGame);

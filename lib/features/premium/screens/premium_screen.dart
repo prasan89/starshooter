@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
 import 'package:star_shooter/core/theme/app_spacing.dart';
 import 'package:star_shooter/core/theme/app_text_styles.dart';
@@ -32,7 +33,9 @@ class _PremiumScreenState extends State<PremiumScreen>
     );
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<BillingNotifier>().initialize();
+      context.read<AnalyticsService>().premiumScreenViewed();
       _fadeCtrl.forward();
     });
   }

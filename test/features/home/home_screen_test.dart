@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:star_shooter/analytics/analytics_event.dart';
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/core/errors/failures.dart';
 import 'package:star_shooter/core/theme/app_theme.dart';
 import 'package:star_shooter/core/utils/result.dart';
@@ -17,6 +19,7 @@ import 'package:star_shooter/domain/models/level_progress.dart';
 import 'package:star_shooter/domain/models/premium_entitlement.dart';
 import 'package:star_shooter/domain/models/premium_product.dart';
 import 'package:star_shooter/domain/models/purchase_state.dart';
+import 'package:star_shooter/domain/repositories/analytics_repository.dart';
 import 'package:star_shooter/domain/repositories/billing_repository.dart';
 import 'package:star_shooter/domain/repositories/daily_attempt_repository.dart';
 import 'package:star_shooter/domain/repositories/level_repository.dart';
@@ -145,8 +148,25 @@ BillingNotifier _stubBillingNotifier() {
     billingRepository: billing,
     entitlementRepository: entRepo,
     config: const BillingConfig(),
+    analytics: _noOpAnalytics(),
   );
 }
+
+class _NoOpAnalyticsRepository implements AnalyticsRepository {
+  @override
+  Future<void> logEvent(AnalyticsEvent event) async {}
+  @override
+  Future<List<AnalyticsEvent>> getPendingEvents() async => [];
+  @override
+  Future<void> clearAllPendingEvents() async {}
+  @override
+  Future<Set<int>> getCompletedMilestones() async => {};
+  @override
+  Future<void> saveCompletedMilestones(Set<int> milestones) async {}
+}
+
+AnalyticsService _noOpAnalytics() =>
+    AnalyticsService(_NoOpAnalyticsRepository());
 
 void main() {
   Widget buildHomeApp({void Function(String location)? navigatedTo}) {

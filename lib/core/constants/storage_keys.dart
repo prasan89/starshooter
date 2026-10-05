@@ -8,3 +8,7 @@ const String kKeyPlayerSettings = 'player_settings';
 const String kKeyDailyAttempts = 'daily_attempts';
 const String kKeyEntitlement = 'entitlement_unlocked';
 const String kKeyHighestUnlockedLevel = 'highest_unlocked_level';
+
+// M14: Analytics
+const String kKeyAnalyticsQueue = 'analytics_queue_v1';
+const String kKeyAnalyticsMilestones = 'analytics_milestones_v1';

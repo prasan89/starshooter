@@ -3,16 +3,19 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/data/billing/billing_notifier.dart';
 import 'package:star_shooter/data/billing/play_billing_entitlement_repository.dart';
 import 'package:star_shooter/data/billing/play_billing_repository.dart';
 import 'package:star_shooter/data/local/local_storage.dart';
+import 'package:star_shooter/data/repositories/analytics_repository_impl.dart';
 import 'package:star_shooter/data/repositories/daily_attempt_repository_impl.dart';
 import 'package:star_shooter/data/repositories/entitlement_repository_impl.dart';
 import 'package:star_shooter/data/repositories/level_repository_impl.dart';
 import 'package:star_shooter/data/repositories/player_repository_impl.dart';
 import 'package:star_shooter/domain/config/billing_config.dart';
 import 'package:star_shooter/domain/config/daily_attempt_config.dart';
+import 'package:star_shooter/domain/repositories/analytics_repository.dart';
 import 'package:star_shooter/domain/repositories/billing_repository.dart';
 import 'package:star_shooter/domain/repositories/daily_attempt_repository.dart';
 import 'package:star_shooter/domain/repositories/entitlement_repository.dart';
@@ -61,6 +64,14 @@ Future<List<SingleChildWidget>> createDataProviders() async {
     ),
     Provider<EntitlementRepository>(
       create: (_) => EntitlementRepositoryImpl(storage),
+    ),
+
+    // ── M14: Analytics ────────────────────────────────────────────────────────
+    Provider<AnalyticsRepository>(
+      create: (_) => LocalAnalyticsRepository(storage),
+    ),
+    ProxyProvider<AnalyticsRepository, AnalyticsService>(
+      update: (_, repo, __) => AnalyticsService(repo),
     ),
     ProxyProvider<LevelRepository, GetWorldProgressUseCase>(
       create: (ctx) => GetWorldProgressUseCase(ctx.read<LevelRepository>()),
@@ -127,19 +138,21 @@ Future<List<SingleChildWidget>> createDataProviders() async {
       update: (_, billingEntRepo, __) => billingEntRepo,
     ),
 
-    ChangeNotifierProxyProvider2<BillingRepository,
-        PlayBillingEntitlementRepository, BillingNotifier>(
+    ChangeNotifierProxyProvider3<BillingRepository,
+        PlayBillingEntitlementRepository, AnalyticsService, BillingNotifier>(
       create: (ctx) => BillingNotifier(
         billingRepository: ctx.read<BillingRepository>(),
         entitlementRepository: ctx.read<PlayBillingEntitlementRepository>(),
         config: BillingConfig.defaultConfig,
+        analytics: ctx.read<AnalyticsService>(),
       ),
-      update: (_, billingRepo, entRepo, previous) =>
+      update: (_, billingRepo, entRepo, analytics, previous) =>
           previous ??
           BillingNotifier(
             billingRepository: billingRepo,
             entitlementRepository: entRepo,
             config: BillingConfig.defaultConfig,
+            analytics: analytics,
           ),
     ),
 
@@ -176,8 +189,9 @@ Future<List<SingleChildWidget>> createDataProviders() async {
       create: (_) => const LocalGameClock(),
     ),
 
-    Provider<ChallengeAnalytics>(
-      create: (_) => const NoOpChallengeAnalytics(),
+    ProxyProvider<AnalyticsService, ChallengeAnalytics>(
+      update: (_, analytics, __) =>
+          AnalyticsServiceChallengeAdapter(analytics),
     ),
 
     Provider<GetTodayChallengeUseCase>(

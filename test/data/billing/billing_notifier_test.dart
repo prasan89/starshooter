@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:star_shooter/analytics/analytics_event.dart';
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/core/errors/failures.dart';
 import 'package:star_shooter/core/utils/result.dart';
 import 'package:star_shooter/data/billing/billing_notifier.dart';
@@ -9,7 +11,28 @@ import 'package:star_shooter/domain/config/billing_config.dart';
 import 'package:star_shooter/domain/models/entitlement_state.dart';
 import 'package:star_shooter/domain/models/premium_product.dart';
 import 'package:star_shooter/domain/models/purchase_state.dart';
+import 'package:star_shooter/domain/repositories/analytics_repository.dart';
 import 'package:star_shooter/domain/repositories/billing_repository.dart';
+
+// ---------------------------------------------------------------------------
+// Fake AnalyticsRepository (no-op for billing tests)
+// ---------------------------------------------------------------------------
+
+class _NoOpAnalyticsRepository implements AnalyticsRepository {
+  @override
+  Future<void> logEvent(AnalyticsEvent event) async {}
+  @override
+  Future<List<AnalyticsEvent>> getPendingEvents() async => [];
+  @override
+  Future<void> clearAllPendingEvents() async {}
+  @override
+  Future<Set<int>> getCompletedMilestones() async => {};
+  @override
+  Future<void> saveCompletedMilestones(Set<int> milestones) async {}
+}
+
+AnalyticsService _noOpAnalytics() =>
+    AnalyticsService(_NoOpAnalyticsRepository());
 
 // ---------------------------------------------------------------------------
 // Fake BillingRepository
@@ -126,6 +149,7 @@ BillingNotifier _buildNotifier({
     billingRepository: billing,
     entitlementRepository: entRepo,
     config: const BillingConfig(),
+    analytics: _noOpAnalytics(),
   );
 }
 
@@ -177,6 +201,7 @@ void main() {
         billingRepository: billing,
         entitlementRepository: entRepo,
         config: const BillingConfig(),
+        analytics: _noOpAnalytics(),
       );
       await notifier.initialize();
       expect(notifier.uiState, BillingUiState.available);
@@ -204,6 +229,7 @@ void main() {
         billingRepository: billing,
         entitlementRepository: entRepo,
         config: const BillingConfig(),
+        analytics: _noOpAnalytics(),
       );
       await notifier.initialize();
       billing.emitPurchase(
@@ -228,6 +254,7 @@ void main() {
         billingRepository: billing,
         entitlementRepository: entRepo,
         config: const BillingConfig(),
+        analytics: _noOpAnalytics(),
       );
       await notifier.initialize();
       expect(notifier.uiState, BillingUiState.available);
@@ -266,6 +293,7 @@ void main() {
         billingRepository: billing,
         entitlementRepository: entRepo,
         config: const BillingConfig(),
+        analytics: _noOpAnalytics(),
       );
       await notifier.initialize();
       await notifier.restore();
@@ -285,6 +313,7 @@ void main() {
         billingRepository: billing,
         entitlementRepository: entRepo,
         config: const BillingConfig(),
+        analytics: _noOpAnalytics(),
       );
       await notifier.initialize();
       await notifier.restore();
@@ -304,6 +333,7 @@ void main() {
         billingRepository: billing,
         entitlementRepository: entRepo,
         config: const BillingConfig(),
+        analytics: _noOpAnalytics(),
       );
       await notifier.initialize();
       // Emit purchased twice

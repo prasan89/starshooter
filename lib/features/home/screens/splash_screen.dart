@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:star_shooter/analytics/analytics_service.dart';
 import 'package:star_shooter/core/constants/app_constants.dart';
 import 'package:star_shooter/core/navigation/app_routes.dart';
 import 'package:star_shooter/core/theme/app_colors.dart';
@@ -46,6 +48,14 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
+
+    // Analytics: app_opened + session_started on launch.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final analytics = context.read<AnalyticsService>();
+      analytics.appOpened();
+      analytics.sessionStarted();
+    });
 
     _navTimer = Timer(kSplashDuration, () {
       if (mounted) context.go(AppRoutes.home);
