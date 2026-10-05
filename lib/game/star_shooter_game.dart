@@ -100,8 +100,11 @@ class StarShooterGame extends FlameGame
       allowedTypes: _currentLevelDef!.availableStarTypes,
     );
     turnSystem.initialize(_currentLevelDef!.moveLimit, spawner: spawner);
-    gameManager.initLevel(_currentLevelDef!.id,
-        moves: _currentLevelDef!.moveLimit,);
+    gameManager.initLevel(
+      _currentLevelDef!.id,
+      moves: _currentLevelDef!.moveLimit,
+      levelDef: _currentLevelDef,
+    );
 
     await audioService.initialize();
 

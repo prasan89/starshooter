@@ -181,15 +181,19 @@ class GameBoardComponent extends PositionComponent
         // Determine particle config by the special type that was activated
         // (we don't know which type caused it here, use cascade config as default)
         final config = _particleConfigForSpecial(pos);
-        game.add(ParticleEmitterComponent(
-          position: Vector2(pixel.dx, pixel.dy),
-          color: star.type.color,
-          config: config,
-        ),);
-        game.add(PopAnimationComponent(
-          position: Vector2(pixel.dx, pixel.dy),
-          color: star.type.color,
-        ),);
+        game.add(
+          ParticleEmitterComponent(
+            position: Vector2(pixel.dx, pixel.dy),
+            color: star.type.color,
+            config: config,
+          ),
+        );
+        game.add(
+          PopAnimationComponent(
+            position: Vector2(pixel.dx, pixel.dy),
+            color: star.type.color,
+          ),
+        );
       }
     }
     // Update grid to final resolved state.

@@ -78,7 +78,8 @@ abstract final class BoardResolver {
               allSpecialTargets.addAll(targets);
               // Score the special targets (scored as a "match group").
               combo.recordMatch(
-                  (targets.length * effect.scoreMultiplier).round(),);
+                (targets.length * effect.scoreMultiplier).round(),
+              );
               // Remove the special star itself + its targets.
               current = current.removeStars([placedPos, ...targets]);
             } else {

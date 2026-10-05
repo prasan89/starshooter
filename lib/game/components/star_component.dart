@@ -291,7 +291,11 @@ class StarComponent extends PositionComponent {
   // ---------------------------------------------------------------------------
 
   void _renderSupernova(
-      Canvas canvas, double r, Color color, double breathePhase,) {
+    Canvas canvas,
+    double r,
+    Color color,
+    double breathePhase,
+  ) {
     const supernovaAmplitude = 0.15;
     final superScale = 1.0 + sin(breathePhase) * supernovaAmplitude;
     final sr = r * superScale;

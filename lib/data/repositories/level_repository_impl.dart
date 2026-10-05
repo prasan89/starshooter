@@ -6,6 +6,10 @@ import 'package:star_shooter/core/utils/result.dart';
 import 'package:star_shooter/data/local/local_storage.dart';
 import 'package:star_shooter/domain/models/level_progress.dart';
 import 'package:star_shooter/domain/repositories/level_repository.dart';
+import 'package:star_shooter/game/level/level_catalog.dart';
+import 'package:star_shooter/game/level/level_validation_result.dart';
+import 'package:star_shooter/game/level/level_validator.dart';
+import 'package:star_shooter/game/models/level_definition.dart';
 
 /// Local-storage-backed implementation of [LevelRepository].
 ///
@@ -155,6 +159,129 @@ class LevelRepositoryImpl implements LevelRepository {
       );
       return Result.failure(
         StorageFailure('Failed to save current level: $e'),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Level catalog access
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<Result<LevelDefinition>> getLevel(int id) async {
+    try {
+      final level = LevelCatalog.getLevelById(id);
+      if (level == null) {
+        return Result.failure(NotFoundFailure('Level $id not found'));
+      }
+      return Result.success(level);
+    } catch (e, st) {
+      dev.log(
+        'LevelRepositoryImpl.getLevel($id) failed',
+        error: e,
+        stackTrace: st,
+      );
+      return Result.failure(StorageFailure('Failed to load level $id: $e'));
+    }
+  }
+
+  @override
+  Future<Result<List<LevelDefinition>>> getLevels(int worldId) async {
+    try {
+      final levels = LevelCatalog.allLevels
+          .where((l) => l.worldMeta?.worldId == worldId)
+          .toList(growable: false);
+      return Result.success(levels);
+    } catch (e, st) {
+      dev.log(
+        'LevelRepositoryImpl.getLevels(worldId: $worldId) failed',
+        error: e,
+        stackTrace: st,
+      );
+      return Result.failure(
+        StorageFailure('Failed to load levels for world $worldId: $e'),
+      );
+    }
+  }
+
+  @override
+  Future<Result<LevelDefinition>> getNextLevel() async {
+    final currentResult = await getCurrentLevel();
+    final currentId = currentResult.when(
+      onSuccess: (v) => v,
+      onFailure: (_) => 1,
+    );
+    final nextResult = await getLevel(currentId + 1);
+    return nextResult.when(
+      onSuccess: Result.success,
+      onFailure: (_) => getLevel(1),
+    );
+  }
+
+  @override
+  Future<Result<LevelValidationResult>> validateLevel(int id) async {
+    final levelResult = await getLevel(id);
+    return levelResult.when(
+      onSuccess: (level) {
+        try {
+          final result = LevelValidator.validate(level);
+          return Result.success(result);
+        } catch (e, st) {
+          dev.log(
+            'LevelRepositoryImpl.validateLevel($id) validator threw',
+            error: e,
+            stackTrace: st,
+          );
+          return Result.failure(
+            ValidationFailure('Validation threw for level $id: $e'),
+          );
+        }
+      },
+      onFailure: Result.failure,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Highest unlocked level
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<Result<int>> getHighestUnlockedLevel() async {
+    try {
+      final value = _storage.getInt(kKeyHighestUnlockedLevel);
+      return Result.success(value ?? 1);
+    } catch (e, st) {
+      dev.log(
+        'LevelRepositoryImpl.getHighestUnlockedLevel failed',
+        error: e,
+        stackTrace: st,
+      );
+      return Result.failure(
+        StorageFailure('Failed to read highest unlocked level: $e'),
+      );
+    }
+  }
+
+  @override
+  Future<Result<void>> setHighestUnlockedLevel(int levelId) async {
+    try {
+      final ok = await _storage.setInt(kKeyHighestUnlockedLevel, levelId);
+      if (!ok) {
+        return Result.failure(
+          const StorageFailure(
+            'setInt returned false for highest unlocked level',
+          ),
+        );
+      }
+      return Result.success(null);
+    } catch (e, st) {
+      dev.log(
+        'LevelRepositoryImpl.setHighestUnlockedLevel failed',
+        error: e,
+        stackTrace: st,
+      );
+      return Result.failure(
+        StorageFailure('Failed to save highest unlocked level: $e'),
       );
     }
   }

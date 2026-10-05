@@ -25,7 +25,7 @@ class GameHudOverlay extends StatelessWidget {
       child: Column(
         children: [
           _TopBar(levelId: levelId, game: game),
-          const _ObjectiveRow(),
+          _ObjectiveRow(game: game),
           const Spacer(),
         ],
       ),
@@ -290,26 +290,63 @@ class _MovesChip extends StatelessWidget {
   }
 }
 
-// ── Objective placeholder row ─────────────────────────────────────────────────
+// ── Objective progress row ────────────────────────────────────────────────────
 
 class _ObjectiveRow extends StatelessWidget {
-  const _ObjectiveRow();
+  const _ObjectiveRow({required this.game});
+
+  final StarShooterGame game;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '★ Clear all stars',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary.withValues(alpha: 0.7),
-            ),
+    return ListenableBuilder(
+      listenable: game.gameManager,
+      builder: (context, _) {
+        final manager = game.gameManager;
+        final displayText = manager.objectiveDisplayText;
+        final fraction = manager.objectiveProgressFraction;
+
+        // Hide the row when there is no active objective.
+        if (displayText.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '★ $displayText',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              SizedBox(
+                width: 160,
+                height: 3,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: fraction.clamp(0.0, 1.0),
+                    backgroundColor:
+                        AppColors.textDisabled.withValues(alpha: 0.4),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.secondary,
+                    ),
+                    minHeight: 3,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -30,9 +30,15 @@ void main() {
 
     test('is deterministic: same seed same sequence', () {
       final s1 = SpecialStarSpawner(
-          levelId: 20, seed: 99, allowedTypes: StarType.values.toList(),);
+        levelId: 20,
+        seed: 99,
+        allowedTypes: StarType.values.toList(),
+      );
       final s2 = SpecialStarSpawner(
-          levelId: 20, seed: 99, allowedTypes: StarType.values.toList(),);
+        levelId: 20,
+        seed: 99,
+        allowedTypes: StarType.values.toList(),
+      );
       final seq1 = List.generate(10, (_) => s1.nextType());
       final seq2 = List.generate(10, (_) => s2.nextType());
       expect(seq1, equals(seq2));

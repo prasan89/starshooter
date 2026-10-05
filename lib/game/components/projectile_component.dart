@@ -127,6 +127,9 @@ class ProjectileComponent extends PositionComponent
     ts.onProjectileLanded();
     game.audioService.playImpact();
 
+    // Capture board state BEFORE resolution for the objective evaluator.
+    final boardBefore = game.board.grid;
+
     // Run board resolution (includes match + gravity + cascade)
     final result =
         await board.placeProjectile(_model, Offset(position.x, position.y));
@@ -160,6 +163,10 @@ class ProjectileComponent extends PositionComponent
         starsPopped: starsPopped,
         floatingDropped: result.floatingStars.length,
         boardCleared: result.boardCleared,
+        matchedPositions: result.matchedGroups.expand((g) => g).toList(),
+        floatingPositions: result.floatingStars,
+        specialPositions: result.specialEffectTargets,
+        boardBeforeResolution: boardBefore,
       );
       ts.onResolvingComplete(scoreGained: result.scoreGained);
     } else {

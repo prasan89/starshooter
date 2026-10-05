@@ -1,5 +1,10 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:star_shooter/game/level/level_objective.dart';
+import 'package:star_shooter/game/level/objective_evaluator.dart';
+import 'package:star_shooter/game/models/board_grid.dart';
+import 'package:star_shooter/game/models/grid_position.dart';
+import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/shooter_game_state.dart';
 import 'package:star_shooter/game/models/star_type.dart';
 
@@ -47,6 +52,11 @@ class GameManager extends ChangeNotifier {
   bool _boardCleared = false;
   int _totalStarsPopped = 0;
 
+  // ── Objective fields ──────────────────────────────────────────────────────
+
+  ObjectiveEvaluator? _objectiveEvaluator;
+  LevelObjective? _currentObjective;
+
   // ── Getters ──────────────────────────────────────────────────────────────
 
   GameState get state => _state;
@@ -73,6 +83,14 @@ class GameManager extends ChangeNotifier {
   bool get boardCleared => _boardCleared;
   int get totalStarsPopped => _totalStarsPopped;
 
+  // ── Objective getters ─────────────────────────────────────────────────────
+
+  int get objectiveProgress => _objectiveEvaluator?.currentProgress ?? 0;
+  int get objectiveTarget => _objectiveEvaluator?.target ?? 100;
+  double get objectiveProgressFraction =>
+      _objectiveEvaluator?.progressFraction ?? 0.0;
+  String get objectiveDisplayText => _currentObjective?.displayText ?? '';
+
   // ── Actions ──────────────────────────────────────────────────────────────
 
   /// Initialises a new session for [levelId] and transitions to [GameState.playing].
@@ -89,7 +107,13 @@ class GameManager extends ChangeNotifier {
   ///
   /// [moves] sets both the remaining and total move counts.
   /// [starsReq] sets the number of stars the player must earn to pass the level.
-  void initLevel(int levelId, {int moves = 20, int starsReq = 5}) {
+  /// [levelDef] wires the objective evaluator when provided.
+  void initLevel(
+    int levelId, {
+    int moves = 20,
+    int starsReq = 5,
+    LevelDefinition? levelDef,
+  }) {
     _level = levelId;
     _score = 0;
     _stars = 0;
@@ -103,6 +127,13 @@ class GameManager extends ChangeNotifier {
     _comboLevel = 0;
     _boardCleared = false;
     _totalStarsPopped = 0;
+    if (levelDef != null) {
+      _currentObjective = levelDef.objective;
+      _objectiveEvaluator = ObjectiveEvaluator(objective: levelDef.objective);
+    } else {
+      _currentObjective = null;
+      _objectiveEvaluator = null;
+    }
     _state = GameState.playing;
     notifyListeners();
   }
@@ -159,13 +190,24 @@ class GameManager extends ChangeNotifier {
     _comboLevel = 0;
     _boardCleared = false;
     _totalStarsPopped = 0;
+    _currentObjective = null;
+    _objectiveEvaluator = null;
     notifyListeners();
   }
 
   /// Records that the player has fired a shot by decrementing [_movesRemaining].
+  ///
+  /// If moves reach 0 and the objective is not yet satisfied the session
+  /// transitions to [GameState.gameOver].
   void onShot() {
     if (_movesRemaining > 0) {
       _movesRemaining--;
+    }
+    if (_movesRemaining <= 0 && _state == GameState.playing) {
+      final objectiveMet = _objectiveEvaluator?.isSatisfied ?? false;
+      if (!objectiveMet) {
+        _state = GameState.gameOver;
+      }
     }
     notifyListeners();
   }
@@ -210,12 +252,30 @@ class GameManager extends ChangeNotifier {
     required int starsPopped,
     required int floatingDropped,
     required bool boardCleared,
+    List<GridPosition> matchedPositions = const [],
+    List<GridPosition> floatingPositions = const [],
+    List<GridPosition> specialPositions = const [],
+    BoardGrid? boardBeforeResolution,
   }) {
     _score += scoreGained;
     _comboLevel = comboLevel;
     _totalStarsPopped += starsPopped + floatingDropped;
     _boardCleared = boardCleared;
-    if (boardCleared) {
+
+    // Update objective evaluator
+    if (_objectiveEvaluator != null && boardBeforeResolution != null) {
+      _objectiveEvaluator!.onResolution(
+        scoreGained: scoreGained,
+        matchedPositions: matchedPositions,
+        floatingPositions: floatingPositions,
+        specialEffectPositions: specialPositions,
+        board: boardBeforeResolution,
+      );
+    }
+
+    // Win detection
+    final objectiveMet = _objectiveEvaluator?.isSatisfied ?? boardCleared;
+    if (boardCleared || objectiveMet) {
       _state = GameState.levelComplete;
     }
     notifyListeners();
