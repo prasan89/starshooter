@@ -66,7 +66,7 @@ class ProjectileComponent extends PositionComponent
     // Flame can occasionally deliver a large frame delta during startup,
     // backgrounding, or device load. Sub-stepping prevents a fast projectile
     // from tunnelling through stars or skipping a wall.
-    var remaining = dt.clamp(0.0, 0.12);
+    var remaining = dt.clamp(0.0, 0.12).toDouble();
     const maxStep = 1.0 / 120.0;
 
     while (remaining > 0 && _active) {
