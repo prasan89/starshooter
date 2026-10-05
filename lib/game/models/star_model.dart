@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/star_state.dart';
 import 'package:star_shooter/game/models/star_type.dart';
@@ -9,6 +10,10 @@ class StarModel {
   final GridPosition gridPosition;
   final StarState state;
   final double collisionRadius;
+
+  /// Color variant index (0–4) for [StarType.normal] stars.
+  /// Maps to [StarColor.fromIndex]. Ignored for special star types.
+  final int colorIndex;
 
   /// Remaining hits needed to thaw this star.
   ///
@@ -23,6 +28,7 @@ class StarModel {
     required this.gridPosition,
     required this.state,
     this.collisionRadius = 20.0,
+    this.colorIndex = 0,
     this.frozenHitsRemaining = 0,
   });
 
@@ -38,6 +44,7 @@ class StarModel {
   factory StarModel.create({
     required StarType type,
     required GridPosition gridPosition,
+    int colorIndex = 0,
     int frozenHitsRemaining = 0,
   }) =>
       StarModel(
@@ -45,15 +52,17 @@ class StarModel {
         type: type,
         gridPosition: gridPosition,
         state: StarState.idle,
+        colorIndex: colorIndex,
         frozenHitsRemaining: frozenHitsRemaining,
       );
 
   /// Creates a star that has just been loaded into the launcher.
-  factory StarModel.projectile({required StarType type}) => StarModel(
+  factory StarModel.projectile({required StarType type, int colorIndex = 0}) => StarModel(
         id: _nextId(),
         type: type,
         gridPosition: GridPosition.invalid(),
         state: StarState.projectile,
+        colorIndex: colorIndex,
         frozenHitsRemaining: 0,
       );
 
@@ -66,6 +75,7 @@ class StarModel {
     GridPosition? gridPosition,
     StarState? state,
     double? collisionRadius,
+    int? colorIndex,
     int? frozenHitsRemaining,
   }) =>
       StarModel(
@@ -74,10 +84,17 @@ class StarModel {
         gridPosition: gridPosition ?? this.gridPosition,
         state: state ?? this.state,
         collisionRadius: collisionRadius ?? this.collisionRadius,
+        colorIndex: colorIndex ?? this.colorIndex,
         frozenHitsRemaining: frozenHitsRemaining ?? this.frozenHitsRemaining,
       );
 
   // ── Frozen star helpers ───────────────────────────────────────────────────
+
+  /// The display color for this star.
+  /// Normal stars use [colorIndex] to pick a [StarColor]; special stars use their fixed color.
+  Color get displayColor => type == StarType.normal
+      ? StarColor.fromIndex(colorIndex).color
+      : type.color;
 
   /// `true` when this is a [StarType.frozenStar] that still needs more hits.
   bool get isFrozen => type == StarType.frozenStar && frozenHitsRemaining > 0;

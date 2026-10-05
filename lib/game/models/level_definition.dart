@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:star_shooter/game/level/difficulty_model.dart';
 import 'package:star_shooter/game/level/level_objective.dart';
 import 'package:star_shooter/game/level/level_world_meta.dart';
@@ -136,15 +138,19 @@ class LevelDefinition {
   /// they require two adjacent matches before thawing.
   BoardGrid buildInitialBoard() {
     if (initialStars.isEmpty) {
-      return BoardGrid.initialBoard(rows: 5);
+      return BoardGrid.initialBoard(rows: 5, seed: randomSeed);
     }
 
     var grid = BoardGrid(config: boardConfig);
+    final rng = Random(randomSeed);
     for (final placement in initialStars) {
       final frozenHits = placement.type == StarType.frozenStar ? 2 : 0;
       final star = StarModel.create(
         type: placement.type,
         gridPosition: placement.position,
+        colorIndex: placement.type == StarType.normal
+            ? rng.nextInt(StarColor.values.length)
+            : 0,
         frozenHitsRemaining: frozenHits,
       );
       grid = grid.placeStar(star, placement.position);

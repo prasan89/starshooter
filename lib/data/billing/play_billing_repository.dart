@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:star_shooter/core/errors/failures.dart';
 import 'package:star_shooter/core/utils/result.dart';
@@ -31,6 +32,7 @@ class PlayBillingRepository implements BillingRepository {
   /// Initialize the purchase listener. Safe to call multiple times.
   void initialize() {
     if (_initialized) return;
+    if (kIsWeb) return; // in_app_purchase not supported on web
     _initialized = true;
     _purchaseController ??= StreamController<ds.PurchaseResult>.broadcast();
     _purchaseSubscription = _iap.purchaseStream.listen(

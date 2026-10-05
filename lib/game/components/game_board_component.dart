@@ -144,7 +144,7 @@ class GameBoardComponent extends PositionComponent
           game.add(
             PopAnimationComponent(
               position: Vector2(pixel.dx, pixel.dy),
-              color: star.type.color,
+              color: star.displayColor,
             ),
           );
           final config = group.length >= 5
@@ -153,7 +153,7 @@ class GameBoardComponent extends PositionComponent
           game.add(
             ParticleEmitterComponent(
               position: Vector2(pixel.dx, pixel.dy),
-              color: star.type.color,
+              color: star.displayColor,
               config: config,
             ),
           );
@@ -187,7 +187,7 @@ class GameBoardComponent extends PositionComponent
         game.add(
           GravityDropComponent(
             startPos: Vector2(pixel.dx, pixel.dy),
-            color: star.type.color,
+            color: star.displayColor,
             horizontalDrift: drift,
           ),
         );
@@ -195,7 +195,7 @@ class GameBoardComponent extends PositionComponent
       game.add(
         ParticleEmitterComponent(
           position: Vector2(pixel.dx, pixel.dy),
-          color: star?.type.color ?? const Color(0xFFFFBF00),
+          color: star?.displayColor ?? const Color(0xFFFFBF00),
           config: ParticleConfig.popSmall,
         ),
       );
@@ -211,14 +211,14 @@ class GameBoardComponent extends PositionComponent
         game.add(
           ParticleEmitterComponent(
             position: Vector2(pixel.dx, pixel.dy),
-            color: star.type.color,
+            color: star.displayColor,
             config: config,
           ),
         );
         game.add(
           PopAnimationComponent(
             position: Vector2(pixel.dx, pixel.dy),
-            color: star.type.color,
+            color: star.displayColor,
           ),
         );
       }
@@ -235,6 +235,52 @@ class GameBoardComponent extends PositionComponent
   /// Triggers full board resolution (match detection, floating-cluster removal,
   /// pop animations). Returns the [ResolutionResult] or `null` if no valid cell
   /// was available.
+  /// Places [star] at the exact [gridPos] (already snapped by collision system).
+  ///
+  /// If [gridPos] is occupied or invalid, falls back to the nearest free
+  /// neighbour — same logic as [placeProjectile] but skips the pixel→grid
+  /// conversion to avoid positional drift after the component is removed.
+  Future<ResolutionResult?> placeProjectileAtGridPos(
+    StarModel star,
+    GridPosition gridPos,
+  ) async {
+    GridPosition targetPos = gridPos;
+
+    if (!_grid.isValidPosition(targetPos) || _grid.isOccupied(targetPos)) {
+      GridPosition? bestPos;
+      double bestDist = double.infinity;
+      final centerPixel = _grid.gridToPixel(targetPos, _boardRect);
+      for (int dr = -1; dr <= 1; dr++) {
+        for (int dc = -1; dc <= 1; dc++) {
+          if (dr == 0 && dc == 0) continue;
+          final candidate = GridPosition(targetPos.row + dr, targetPos.col + dc);
+          if (_grid.isValidPosition(candidate) && !_grid.isOccupied(candidate)) {
+            final pixel = _grid.gridToPixel(candidate, _boardRect);
+            final dx = centerPixel.dx - pixel.dx;
+            final dy = centerPixel.dy - pixel.dy;
+            final d = dx * dx + dy * dy;
+            if (d < bestDist) {
+              bestDist = d;
+              bestPos = candidate;
+            }
+          }
+        }
+      }
+      if (bestPos == null) return null;
+      targetPos = bestPos;
+    }
+
+    final placed = star.copyWith(gridPosition: targetPos);
+    _grid = _grid.placeStar(placed, targetPos);
+    final result = BoardResolver.resolve(
+      board: _grid,
+      placedPos: targetPos,
+      specialConfig: _specialConfig,
+    );
+    await _applyResolution(result, targetPos);
+    return result;
+  }
+
   Future<ResolutionResult?> placeProjectile(
     StarModel star,
     Offset pixelPos,

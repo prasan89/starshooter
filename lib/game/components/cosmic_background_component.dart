@@ -15,7 +15,9 @@ import 'package:star_shooter/core/theme/app_colors.dart';
 /// only recomputed on resize. Per-frame work is minimal: 2 sin() calls for
 /// drift + 150 alpha computations + mutating a single reused Paint.
 class CosmicBackgroundComponent extends PositionComponent {
-  CosmicBackgroundComponent() : super(priority: -10);
+  CosmicBackgroundComponent() : super(priority: -10) {
+    _generateStars();
+  }
 
   static const int _starCount = 150;
   static const int _seed = 0xDEADBEEF;
@@ -44,7 +46,6 @@ class CosmicBackgroundComponent extends PositionComponent {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    _generateStars();
   }
 
   void _generateStars() {
@@ -80,11 +81,12 @@ class CosmicBackgroundComponent extends PositionComponent {
   }
 
   void _rebuildStarPixels(Vector2 sz) {
-    _starPxX.length = _starFracX.length;
-    _starPxY.length = _starFracY.length;
-    for (int i = 0; i < _starCount; i++) {
-      _starPxX[i] = _starFracX[i] * sz.x;
-      _starPxY[i] = _starFracY[i] * sz.y;
+    if (_starFracX.isEmpty) return;
+    _starPxX.clear();
+    _starPxY.clear();
+    for (int i = 0; i < _starFracX.length; i++) {
+      _starPxX.add(_starFracX[i] * sz.x);
+      _starPxY.add(_starFracY[i] * sz.y);
     }
   }
 
@@ -151,7 +153,8 @@ class CosmicBackgroundComponent extends PositionComponent {
     );
 
     // 3. Stars — single reused Paint, color mutated per star.
-    for (int i = 0; i < _starCount; i++) {
+    if (_starPxX.isEmpty) return;
+    for (int i = 0; i < _starPxX.length; i++) {
       final phase = _starTwinklePhase[i] + _time * 0.7;
       final twinkle = 0.7 + sin(phase) * 0.3;
       final alpha = (_starBrightness[i] * twinkle).clamp(0.0, 1.0);

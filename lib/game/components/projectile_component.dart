@@ -1,6 +1,8 @@
+import 'dart:math' show Random;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:star_shooter/game/components/premium_star_renderer.dart';
 import 'package:star_shooter/game/fx/shooting_trail_component.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
@@ -19,6 +21,22 @@ class ProjectileComponent extends PositionComponent
   Vector2 _velocity;
   bool _active = true;
   double _trailTimer = 0.0;
+  double _shimmerT = 0.0;
+
+  // Premium renderer cached per color index (shared across all projectiles).
+  static final _renderers = <int, PremiumStarRenderer>{};
+  static PremiumStarRenderer _renderer(int colorIndex) {
+    return _renderers.putIfAbsent(colorIndex, () {
+      const styles = [
+        StarVisualStyle.yellow,
+        StarVisualStyle.red,
+        StarVisualStyle.green,
+        StarVisualStyle.blue,
+        StarVisualStyle.purple,
+      ];
+      return PremiumStarRenderer(styles[colorIndex % styles.length]);
+    });
+  }
 
   static const double _speed = 600.0; // pixels per second
   static const double _trailInterval = 0.05; // seconds between trail puffs
@@ -43,6 +61,7 @@ class ProjectileComponent extends PositionComponent
   void update(double dt) {
     if (!_active) return;
     position += _velocity * dt;
+    _shimmerT = (_shimmerT + dt * 3.0) % (2 * 3.1415926535);
 
     // Spawn trail puffs at fixed intervals.
     _trailTimer += dt;
@@ -51,7 +70,7 @@ class ProjectileComponent extends PositionComponent
       game.add(
         ShootingTrailComponent(
           position: position.clone(),
-          color: _model.type.color,
+          color: _model.displayColor,
         ),
       );
     }
@@ -104,20 +123,23 @@ class ProjectileComponent extends PositionComponent
   void _landAt(Vector2 pos) {
     if (!_active) return;
     final board = game.board;
-    final snapGrid =
-        board.grid.pixelToGrid(Offset(pos.x, pos.y), board.boardRect);
-    _placeAtGrid(snapGrid);
+    // Find the nearest free cell to where the projectile is.
+    var gridPos = board.grid.pixelToGrid(Offset(pos.x, pos.y), board.boardRect);
+    // If invalid (e.g. hit ceiling above row 0), clamp to row 0.
+    if (!board.grid.isValidPosition(gridPos)) {
+      gridPos = GridPosition(0, gridPos.col.clamp(0, board.grid.config.cols - 1));
+    }
+    _placeAtGrid(gridPos);
   }
 
   void _placeAtGrid(GridPosition gridPos) {
     if (!_active) return;
     _active = false;
-    // Start async resolution without blocking the update loop.
-    _resolveAsync();
+    _resolveAsync(gridPos);
     removeFromParent();
   }
 
-  Future<void> _resolveAsync() async {
+  Future<void> _resolveAsync(GridPosition gridPos) async {
     final board = game.board;
     final gm = game.gameManager;
     final ts = game.turnSystem;
@@ -130,26 +152,26 @@ class ProjectileComponent extends PositionComponent
     // Capture board state BEFORE resolution for the objective evaluator.
     final boardBefore = game.board.grid;
 
-    // Run board resolution (includes match + gravity + cascade)
-    final result =
-        await board.placeProjectile(_model, Offset(position.x, position.y));
+    // Place at the already-snapped grid position (avoids pixel→grid drift
+    // from using position after removeFromParent).
+    final result = await board.placeProjectileAtGridPos(_model, gridPos);
 
     // Trigger audio / haptic / screen effects based on result
     if (result != null) {
       if (result.matchedGroups.isNotEmpty) {
         game.audioService.playMatch();
         game.hapticService.onMatch();
-        game.screenEffects.onMatch(_model.type.color);
+        game.screenEffects.onMatch(_model.displayColor);
         if (result.comboLevel > 2) {
           game.audioService.playCascade();
           game.hapticService.onCascade();
-          game.screenEffects.onCascade(result.comboLevel, _model.type.color);
+          game.screenEffects.onCascade(result.comboLevel, _model.displayColor);
         }
       }
       if (result.specialEffectTargets.isNotEmpty) {
         game.audioService.playCascade(); // reuse cascade sfx for specials
         game.hapticService.onCascade();
-        game.screenEffects.onCascade(2, _model.type.color);
+        game.screenEffects.onCascade(2, _model.displayColor);
       }
     }
 
@@ -182,9 +204,20 @@ class ProjectileComponent extends PositionComponent
 
     // Advance launcher to next star (if game not over/complete)
     if (!gm.boardCleared && gm.state == GameState.playing) {
-      gm.advanceTurn(gm.nextStarType, StarType.normal);
-      game.shooter.loadStars(gm.currentStarType, gm.nextStarType);
-      game.trajectory.setTintColor(gm.currentStarType.color);
+      // Pick next color only from colors still on the board so matches stay possible.
+      final boardColors = game.board.grid.colorsInBottomRows(rows: 3).toList();
+      final palette = boardColors.isNotEmpty ? boardColors : List.generate(5, (i) => i);
+      final nextColorIndex = palette[Random().nextInt(palette.length)];
+      gm.advanceTurn(
+        gm.nextStarType,
+        StarType.normal,
+        currentColorIndex: gm.nextColorIndex,
+        nextColorIndex: nextColorIndex,
+      );
+      game.shooter.loadStars(gm.currentStarType, gm.nextStarType, currentColorIndex: gm.currentColorIndex, nextColorIndex: gm.nextColorIndex);
+      game.trajectory.setTintColor(
+        StarColor.fromIndex(gm.currentColorIndex).color,
+      );
       gm.updateShooterState(ShooterGameState.ready);
     }
   }
@@ -194,15 +227,23 @@ class ProjectileComponent extends PositionComponent
     final center = size / 2;
     final r = _model.collisionRadius;
 
-    final glowPaint = Paint()
-      ..color = _model.type.color.withValues(alpha: 0.3)
-      ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-    canvas.drawCircle(center.toOffset(), r * 1.3, glowPaint);
-
-    final paint = Paint()
-      ..color = _model.type.color
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center.toOffset(), r, paint);
+    if (_model.type == StarType.normal) {
+      // Premium star shape in flight — same renderer as board stars.
+      canvas.save();
+      canvas.translate(center.x, center.y);
+      _renderer(_model.colorIndex).render(canvas, r, shimmerT: _shimmerT);
+      canvas.restore();
+    } else {
+      // Special stars: glowing orb.
+      final glowPaint = Paint()
+        ..color = _model.displayColor.withValues(alpha: 0.3)
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+      canvas.drawCircle(center.toOffset(), r * 1.3, glowPaint);
+      final paint = Paint()
+        ..color = _model.displayColor
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center.toOffset(), r, paint);
+    }
   }
 }

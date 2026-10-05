@@ -14,6 +14,7 @@ import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/level/level_catalog.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
 import 'package:star_shooter/game/models/star_model.dart';
+import 'package:star_shooter/game/models/star_type.dart';
 import 'package:star_shooter/game/services/audio_service.dart';
 import 'package:star_shooter/game/services/haptic_service.dart';
 import 'package:star_shooter/game/special/black_hole_effect.dart';
@@ -108,16 +109,28 @@ class StarShooterGame extends FlameGame
       allowedTypes: _currentLevelDef!.availableStarTypes,
     );
     turnSystem.initialize(_currentLevelDef!.moveLimit, spawner: spawner);
+
+    // Build the initial board grid to read which colors are present.
+    final initialGrid = _currentLevelDef!.buildInitialBoard();
+
     gameManager.initLevel(
       _currentLevelDef!.id,
       moves: _currentLevelDef!.moveLimit,
       levelDef: _currentLevelDef,
+      seed: _currentLevelDef!.randomSeed,
+      boardColors: initialGrid.colorsInBottomRows(rows: 2),
     );
 
     await audioService.initialize();
 
-    // Sync trajectory tint to the initial star type.
-    _trajectory.setTintColor(gameManager.currentStarType.color);
+    // Sync shooter display and trajectory tint to the initial launcher colors.
+    _shooter.loadStars(
+      gameManager.currentStarType,
+      gameManager.nextStarType,
+      currentColorIndex: gameManager.currentColorIndex,
+      nextColorIndex: gameManager.nextColorIndex,
+    );
+    _trajectory.setTintColor(StarColor.fromIndex(gameManager.currentColorIndex).color);
   }
 
   // ── Pause / resume ──────────────────────────────────────────────────────────
@@ -191,7 +204,10 @@ class StarShooterGame extends FlameGame
   /// Fires the current star in the aim direction.
   void shootProjectile() {
     final currentType = gameManager.currentStarType;
-    final model = StarModel.projectile(type: currentType);
+    final model = StarModel.projectile(
+      type: currentType,
+      colorIndex: gameManager.currentColorIndex,
+    );
     final projectile = ProjectileComponent(
       model: model,
       direction: _aimDirection,
@@ -202,7 +218,7 @@ class StarShooterGame extends FlameGame
     add(projectile);
     gameManager.onShot();
     turnSystem.shoot();
-    _trajectory.setTintColor(gameManager.currentStarType.color);
+    _trajectory.setTintColor(StarColor.fromIndex(gameManager.currentColorIndex).color);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -210,8 +226,8 @@ class StarShooterGame extends FlameGame
   /// Updates the trajectory tint and shooter display when the star type changes.
   // ignore: unused_element
   void _onStarTypeChanged() {
-    _trajectory.setTintColor(gameManager.currentStarType.color);
-    _shooter.loadStars(gameManager.currentStarType, gameManager.nextStarType);
+    _trajectory.setTintColor(StarColor.fromIndex(gameManager.currentColorIndex).color);
+    _shooter.loadStars(gameManager.currentStarType, gameManager.nextStarType, currentColorIndex: gameManager.currentColorIndex, nextColorIndex: gameManager.nextColorIndex);
   }
 
   /// Computes a clamped aim direction from the launcher centre toward [touch].

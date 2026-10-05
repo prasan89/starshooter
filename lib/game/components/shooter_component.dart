@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart'
     show BlurStyle, Color, Colors, MaskFilter, Paint, PaintingStyle;
+import 'package:star_shooter/game/components/premium_star_renderer.dart';
 import 'package:star_shooter/game/models/star_type.dart';
 import 'package:star_shooter/game/star_shooter_game.dart';
 
@@ -18,6 +19,26 @@ class ShooterComponent extends PositionComponent
     with HasGameReference<StarShooterGame> {
   StarType _currentType = StarType.normal;
   StarType _nextType = StarType.normal;
+  int _currentColorIndex = 0;
+  int _nextColorIndex = 1;
+
+  // ── Premium renderers (one per color index, shared across all launchers) ──
+  static final _premiumRenderers = <int, PremiumStarRenderer>{};
+
+  static PremiumStarRenderer _renderer(int colorIndex) {
+    return _premiumRenderers.putIfAbsent(colorIndex, () {
+      const styles = [
+        StarVisualStyle.yellow,
+        StarVisualStyle.red,
+        StarVisualStyle.green,
+        StarVisualStyle.blue,
+        StarVisualStyle.purple,
+      ];
+      return PremiumStarRenderer(styles[colorIndex % styles.length]);
+    });
+  }
+
+  double _shimmerT = 0.0;
 
   /// World-space position of the launcher centre.
   Vector2 _launcherCenter = Vector2.zero();
@@ -61,6 +82,7 @@ class ShooterComponent extends PositionComponent
   void update(double dt) {
     super.update(dt);
     _ringAngle = (_ringAngle + dt * 0.3) % (2 * pi);
+    _shimmerT = (_shimmerT + dt) % (2 * pi);
     if (_justLoaded) {
       _loadFlashElapsed += dt;
       if (_loadFlashElapsed > 0.3) {
@@ -82,21 +104,28 @@ class ShooterComponent extends PositionComponent
   }
 
   void _updatePaints() {
+    final currentColor = _currentType == StarType.normal
+        ? StarColor.fromIndex(_currentColorIndex).color
+        : _currentType.color;
+    final nextColor = _nextType == StarType.normal
+        ? StarColor.fromIndex(_nextColorIndex).color
+        : _nextType.color;
+
     _basePaint = Paint()
       ..color = const Color(0xFF1A1E3A)
       ..style = PaintingStyle.fill;
 
     _currentGlowPaint = Paint()
-      ..color = _currentType.color.withValues(alpha: 0.35)
+      ..color = currentColor.withValues(alpha: 0.35)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
 
     _currentFillPaint = Paint()
-      ..color = _currentType.color
+      ..color = currentColor
       ..style = PaintingStyle.fill;
 
     _nextPaint = Paint()
-      ..color = _nextType.color
+      ..color = nextColor
       ..style = PaintingStyle.fill;
 
     _ringPaint = Paint()
@@ -108,9 +137,11 @@ class ShooterComponent extends PositionComponent
   // ── Public API ─────────────────────────────────────────────────────────────
 
   /// Update the displayed stars and trigger load flash effect.
-  void loadStars(StarType current, StarType next) {
+  void loadStars(StarType current, StarType next, {int currentColorIndex = 0, int nextColorIndex = 0}) {
     _currentType = current;
     _nextType = next;
+    _currentColorIndex = currentColorIndex;
+    _nextColorIndex = nextColorIndex;
     _justLoaded = true;
     _loadFlashElapsed = 0.0;
     _updatePaints();
@@ -175,33 +206,42 @@ class ShooterComponent extends PositionComponent
 
     // Extra glow during load flash.
     if (_justLoaded) {
+      final currentColor = _currentType == StarType.normal
+          ? StarColor.fromIndex(_currentColorIndex).color
+          : _currentType.color;
       final flashGlow = Paint()
-        ..color = _currentType.color
+        ..color = currentColor
             .withValues(alpha: 0.55 * (1.0 - _loadFlashElapsed / 0.3))
         ..style = PaintingStyle.fill
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
       canvas.drawCircle(ui.Offset(lc.x, lc.y), starRadius * 1.6, flashGlow);
     }
 
-    // Current star fill.
-    canvas.drawCircle(
-      ui.Offset(lc.x, lc.y),
-      starRadius,
-      _currentFillPaint,
-    );
+    // Current star — premium renderer.
+    canvas.save();
+    canvas.translate(lc.x, lc.y);
+    if (_currentType == StarType.normal) {
+      _renderer(_currentColorIndex).render(canvas, starRadius, shimmerT: _shimmerT);
+    } else {
+      // Special stars: simple glow + filled shape (unchanged look).
+      canvas.drawCircle(ui.Offset.zero, starRadius, _currentFillPaint);
+    }
+    canvas.restore();
 
-    // Highlight specular.
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-      ui.Offset(
-        lc.x - starRadius * 0.25,
-        lc.y - starRadius * 0.25,
-      ),
-      starRadius * 0.28,
-      highlightPaint,
-    );
+    // Highlight specular (only for special stars — premium renderer handles its own).
+    if (_currentType != StarType.normal) {
+      final highlightPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.35)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        ui.Offset(
+          lc.x - starRadius * 0.25,
+          lc.y - starRadius * 0.25,
+        ),
+        starRadius * 0.28,
+        highlightPaint,
+      );
+    }
 
     // Next-star preview — top-right of the launcher.
     final nextX = lc.x + _currentRadius + 20;
@@ -229,10 +269,14 @@ class ShooterComponent extends PositionComponent
       _nextRadius + 3,
       nextBgPaint,
     );
-    canvas.drawCircle(
-      ui.Offset(nextX, nextY),
-      _nextRadius,
-      _nextPaint,
-    );
+    // Next star — premium renderer.
+    canvas.save();
+    canvas.translate(nextX, nextY);
+    if (_nextType == StarType.normal) {
+      _renderer(_nextColorIndex).render(canvas, _nextRadius, shimmerT: _shimmerT, glowAlphaScale: 0.6);
+    } else {
+      canvas.drawCircle(ui.Offset.zero, _nextRadius, _nextPaint);
+    }
+    canvas.restore();
   }
 }

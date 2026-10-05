@@ -1,5 +1,24 @@
 import 'package:flutter/painting.dart';
 
+/// The 5 color variants for normal stars.
+enum StarColor {
+  yellow,
+  red,
+  green,
+  blue,
+  purple;
+
+  Color get color => switch (this) {
+        StarColor.yellow => const Color(0xFFFFBF00),
+        StarColor.red    => const Color(0xFFFF3D3D),
+        StarColor.green  => const Color(0xFF3DCC3D),
+        StarColor.blue   => const Color(0xFF3D9EFF),
+        StarColor.purple => const Color(0xFFCC55FF),
+      };
+
+  static StarColor fromIndex(int i) => StarColor.values[i % StarColor.values.length];
+}
+
 /// The visual and behavioural type of a star on the board.
 enum StarType {
   normal,

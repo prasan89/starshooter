@@ -59,12 +59,10 @@ class DailyChallengeGenerator {
     final level = levels[levelIndex];
 
     // Secondary seeds for objective, difficulty, move modifier — LCG chain.
-    final objSeed =
-        (seed * 6364136223846793005 + 1442695040888963407) & 0x7FFFFFFF;
-    final diffSeed =
-        (objSeed * 6364136223846793005 + 1442695040888963407) & 0x7FFFFFFF;
-    final moveSeed =
-        (diffSeed * 6364136223846793005 + 1442695040888963407) & 0x7FFFFFFF;
+    // Uses 32-bit constants (compatible with JS/Web where 64-bit ints overflow).
+    final objSeed = ((seed * 1664525) + 1013904223) & 0x7FFFFFFF;
+    final diffSeed = ((objSeed * 1664525) + 1013904223) & 0x7FFFFFFF;
+    final moveSeed = ((diffSeed * 1664525) + 1013904223) & 0x7FFFFFFF;
 
     final difficulty = _selectDifficulty(diffSeed);
     final objective =

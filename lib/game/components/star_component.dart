@@ -2,6 +2,7 @@ import 'dart:math' show pi, sin, cos;
 
 import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
+import 'package:star_shooter/game/components/premium_star_renderer.dart';
 import 'package:star_shooter/game/models/star_model.dart';
 import 'package:star_shooter/game/models/star_type.dart';
 
@@ -32,6 +33,22 @@ class StarComponent extends PositionComponent {
   double _rainbowAngle = 0.0;
   double _orbitAngle = 0.0;
 
+  // ── Premium star renderers (one per color variant, lazy-init) ────────────
+  static final _premiumRenderers = <int, PremiumStarRenderer>{};
+
+  static PremiumStarRenderer _premiumRenderer(int colorIndex) {
+    return _premiumRenderers.putIfAbsent(colorIndex, () {
+      const styles = [
+        StarVisualStyle.yellow,
+        StarVisualStyle.red,
+        StarVisualStyle.green,
+        StarVisualStyle.blue,
+        StarVisualStyle.purple,
+      ];
+      return PremiumStarRenderer(styles[colorIndex % styles.length]);
+    });
+  }
+
   // ── Cached Paint objects ─────────────────────────────────────────────────
 
   // Shared / reusable paints.
@@ -40,18 +57,9 @@ class StarComponent extends PositionComponent {
   final _outlinePaint = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.0;
-  final _rimPaint = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.0
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
   final _specularPaint = Paint()
     ..color = const Color(0x77FFFFFF);
-  final _shimmerPaint = Paint()
-    ..color = const Color(0x55FFFFFF)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.5
-    ..strokeCap = StrokeCap.round
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
   final _spikePaint = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.8
@@ -134,7 +142,7 @@ class StarComponent extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    final color = model.type.color;
+    final color = model.displayColor;
     final breathePhase = (_breatheT / _breathePeriod) * 2 * pi;
     final scale = 1.0 + sin(breathePhase) * _breatheAmplitude;
     final r = _radius * scale;
@@ -206,47 +214,13 @@ class StarComponent extends PositionComponent {
   }
 
   // ---------------------------------------------------------------------------
-  // Normal star
+  // Normal star — premium multi-layer renderer
   // ---------------------------------------------------------------------------
 
   void _renderNormal(Canvas canvas, double r, Color color, double breathePhase) {
-    _glowPaint
-      ..color = color.withValues(alpha: 0.15)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-    canvas.drawCircle(Offset.zero, r * 1.5, _glowPaint);
-
-    // Rebuild sphere gradient for this specific color (type may change).
-    final brightColor = Color.lerp(color, const Color(0xFFFFFFFF), 0.35)!;
-    final darkColor = Color.lerp(color, const Color(0xFF000000), 0.25)!;
-    _spherePaint.shader = RadialGradient(
-      center: const Alignment(-0.4, -0.4),
-      colors: [brightColor, color, darkColor],
-      stops: const [0.0, 0.5, 1.0],
-    ).createShader(Rect.fromCircle(center: Offset.zero, radius: r));
-    canvas.drawCircle(Offset.zero, r, _spherePaint);
-
-    _outlinePaint.color = color.withValues(alpha: 0.8);
-    canvas.drawCircle(Offset.zero, r, _outlinePaint);
-
-    _rimPaint.color = color.withValues(alpha: 0.35);
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset.zero, radius: r * 0.88),
-      0.5 * pi,
-      pi,
-      false,
-      _rimPaint,
-    );
-
-    canvas.drawCircle(Offset(-r * 0.28, -r * 0.28), r * 0.22, _specularPaint);
-
+    final renderer = _premiumRenderer(model.colorIndex);
     final shimmerPhase = (_shimmerT / _shimmerPeriod) * 2 * pi;
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset.zero, radius: r * 0.65),
-      shimmerPhase,
-      0.6,
-      false,
-      _shimmerPaint,
-    );
+    renderer.render(canvas, r, shimmerT: shimmerPhase);
   }
 
   // ---------------------------------------------------------------------------
@@ -428,7 +402,7 @@ class StarComponent extends PositionComponent {
 
   void _renderFrozenStar(Canvas canvas, double r) {
     if (model.isThawed) {
-      _renderNormal(canvas, r, model.type.color, (_breatheT / _breathePeriod) * 2 * pi);
+      _renderNormal(canvas, r, model.displayColor, (_breatheT / _breathePeriod) * 2 * pi);
       return;
     }
 

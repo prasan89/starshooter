@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:flutter/foundation.dart';
 
 import 'package:star_shooter/game/level/level_objective.dart';
@@ -44,6 +46,8 @@ class GameManager extends ChangeNotifier {
   int _starsRequired = 5;
   StarType _currentStarType = StarType.normal;
   StarType _nextStarType = StarType.normal;
+  int _currentColorIndex = 0;
+  int _nextColorIndex = 1;
   ShooterGameState _shooterState = ShooterGameState.ready;
 
   // ── Combo / scoring fields ────────────────────────────────────────────────
@@ -76,6 +80,8 @@ class GameManager extends ChangeNotifier {
   int get starsRequired => _starsRequired;
   StarType get currentStarType => _currentStarType;
   StarType get nextStarType => _nextStarType;
+  int get currentColorIndex => _currentColorIndex;
+  int get nextColorIndex => _nextColorIndex;
   ShooterGameState get shooterState => _shooterState;
 
   int get comboLevel => _comboLevel;
@@ -108,11 +114,15 @@ class GameManager extends ChangeNotifier {
   /// [moves] sets both the remaining and total move counts.
   /// [starsReq] sets the number of stars the player must earn to pass the level.
   /// [levelDef] wires the objective evaluator when provided.
+  /// [boardColors] restricts the initial launcher colors to those actually on
+  /// the board, guaranteeing the first shot can make a match.
   void initLevel(
     int levelId, {
     int moves = 20,
     int starsReq = 5,
     LevelDefinition? levelDef,
+    int seed = 42,
+    Set<int>? boardColors,
   }) {
     _level = levelId;
     _score = 0;
@@ -123,6 +133,14 @@ class GameManager extends ChangeNotifier {
     _starsRequired = starsReq;
     _currentStarType = StarType.normal;
     _nextStarType = StarType.normal;
+    // Pick initial launcher colors from the colors actually on the board so
+    // the first shot always has a realistic chance of making a match.
+    final rng = Random(seed);
+    final palette = boardColors != null && boardColors.isNotEmpty
+        ? boardColors.toList()
+        : List.generate(5, (i) => i);
+    _currentColorIndex = palette[rng.nextInt(palette.length)];
+    _nextColorIndex = palette[rng.nextInt(palette.length)];
     _shooterState = ShooterGameState.ready;
     _comboLevel = 0;
     _boardCleared = false;
@@ -232,9 +250,16 @@ class GameManager extends ChangeNotifier {
 
   /// Advances the star-type queue: [nextCurrent] becomes the current star and
   /// [nextNext] becomes the upcoming (preview) star.
-  void advanceTurn(StarType nextCurrent, StarType nextNext) {
+  void advanceTurn(
+    StarType nextCurrent,
+    StarType nextNext, {
+    int currentColorIndex = 0,
+    int nextColorIndex = 0,
+  }) {
     _currentStarType = nextCurrent;
     _nextStarType = nextNext;
+    _currentColorIndex = currentColorIndex;
+    _nextColorIndex = nextColorIndex;
     notifyListeners();
   }
 

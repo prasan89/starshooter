@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math' show Random;
 import 'dart:ui' show Offset, Rect;
 
 import 'package:star_shooter/game/models/board_config.dart';
@@ -175,18 +176,54 @@ class BoardGrid {
   List<GridPosition> get frozenPositions =>
       occupiedPositions.where((p) => _stars[p]!.isFrozen).toList();
 
+  /// Returns the set of distinct [StarModel.colorIndex] values present on the
+  /// board in the [rows] lowest-numbered rows that actually contain stars.
+  ///
+  /// "Lowest" here means highest row index — the stars nearest to the shooter.
+  /// Used to seed the launcher with a color that exists near the landing zone.
+  Set<int> colorsInBottomRows({int rows = 2}) {
+    if (_stars.isEmpty) return {0, 1, 2, 3, 4};
+
+    // Find the highest occupied row (closest to the shooter).
+    int maxRow = 0;
+    for (final pos in _stars.keys) {
+      if (pos.row > maxRow) maxRow = pos.row;
+    }
+
+    final result = <int>{};
+    for (final entry in _stars.entries) {
+      final pos = entry.key;
+      final star = entry.value;
+      if (star.type == StarType.normal && pos.row >= maxRow - rows + 1) {
+        result.add(star.colorIndex);
+      }
+    }
+    // Fall back to all normal star colors on the board.
+    if (result.isEmpty) {
+      for (final star in _stars.values) {
+        if (star.type == StarType.normal) result.add(star.colorIndex);
+      }
+    }
+    return result;
+  }
+
   // ── Factory: initial level board ──────────────────────────────────────────
 
   /// Builds the starting board for level 1 by populating the top [rows] rows
   /// with [StarType.normal] stars in the standard hex offset pattern.
-  static BoardGrid initialBoard({int rows = 5}) {
+  static BoardGrid initialBoard({int rows = 5, int seed = 42}) {
     final grid = BoardGrid();
     var current = grid;
+    final rng = Random(seed);
     for (int r = 0; r < rows; r++) {
       final colCount = r.isOdd ? grid.config.cols - 1 : grid.config.cols;
       for (int c = 0; c < colCount; c++) {
         final pos = GridPosition(r, c);
-        final star = StarModel.create(type: StarType.normal, gridPosition: pos);
+        final star = StarModel.create(
+          type: StarType.normal,
+          gridPosition: pos,
+          colorIndex: rng.nextInt(StarColor.values.length),
+        );
         current = current.placeStar(star, pos);
       }
     }
@@ -202,12 +239,15 @@ class BoardGrid {
   static BoardGrid withPlacements(
     List<(GridPosition, StarType)> placements, {
     BoardConfig? config,
+    int seed = 42,
   }) {
     var grid = BoardGrid(config: config);
+    final rng = Random(seed);
     for (final (pos, type) in placements) {
       final star = StarModel.create(
         type: type,
         gridPosition: pos,
+        colorIndex: type == StarType.normal ? rng.nextInt(StarColor.values.length) : 0,
         frozenHitsRemaining: type == StarType.frozenStar ? 2 : 0,
       );
       grid = grid.placeStar(star, pos);

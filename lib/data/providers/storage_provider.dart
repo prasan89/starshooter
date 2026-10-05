@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -114,7 +115,7 @@ Future<List<SingleChildWidget>> createDataProviders() async {
     Provider<BillingRepository>(
       create: (_) {
         final repo = PlayBillingRepository(storage: storage);
-        repo.initialize();
+        if (!kIsWeb) repo.initialize(); // in_app_purchase not supported on web
         return repo;
       },
     ),
