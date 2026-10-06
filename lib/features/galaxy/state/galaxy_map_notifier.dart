@@ -15,7 +15,7 @@ class GalaxyMapNotifier extends ChangeNotifier {
   GalaxyLoadState _loadState = GalaxyLoadState.loading;
   List<WorldProgress> _worldProgress = [];
   Map<int, LevelProgress> _levelProgressById = {};
-  int _highestUnlockedLevel = 1;
+  int _highestUnlockedLevel = 200;
   String? _errorMessage;
 
   GalaxyMapNotifier({

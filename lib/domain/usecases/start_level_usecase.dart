@@ -47,7 +47,15 @@ class StartLevelUseCase {
   }
 
   Future<StartLevelResult> _execute({required int levelId}) async {
-    // 1. Check premium
+    // 1. Check premium — dev override grants unlimited plays locally.
+    const bool kDevUnlimited = true;
+    if (kDevUnlimited) {
+      return const StartLevelResult(
+        status: StartLevelStatus.allowed,
+        isPremium: true,
+      );
+    }
+
     final entitlementResult =
         await premiumEntitlementRepository.getEntitlement();
     final isPremium = entitlementResult.when(

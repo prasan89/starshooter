@@ -187,8 +187,6 @@ class StarShooterGame extends FlameGame
   void onDragUpdate(DragUpdateEvent event) {
     super.onDragUpdate(event);
     if (!_isDragging) return;
-    // Always aim from the latest pointer position. Using canvasStartPosition
-    // here freezes the aim to the drag origin and makes the shooter feel broken.
     final dir = _computeAimDir(event.canvasStartPosition);
     _aimDirection = dir;
     _trajectory.showTrajectory(

@@ -104,19 +104,49 @@ abstract final class CollisionSystem {
     required GridPosition hitPos,
     required BoardGrid board,
     required Rect boardRect,
+    Vector2? velocity,
   }) {
     final neighbors = board.neighborsOf(hitPos);
     GridPosition? best;
-    double bestDistSquared = double.infinity;
+    double bestScore = double.infinity;
+
+    // Step back one radius along velocity to get the contact point.
+    final Vector2 approachPos;
+    if (velocity != null && velocity.length2 > 0) {
+      final dir = velocity.normalized();
+      final r = BoardConfig.standard.starRadius;
+      approachPos = projectilePos - dir * r;
+    } else {
+      approachPos = projectilePos;
+    }
+
+    // When the projectile is moving upward, strongly prefer neighbours that
+    // are above (lower row index) the hit star. Same-row is neutral; below
+    // is heavily penalised (already was). This stops side-hits from snapping
+    // to a sideways neighbour when an above-neighbour is also free.
+    final movingUp = velocity != null && velocity.y < 0;
 
     for (final n in neighbors) {
       if (!board.isOccupied(n) && board.isValidPosition(n)) {
         final nPixel = board.gridToPixel(n, boardRect);
-        final dx = projectilePos.x - nPixel.dx;
-        final dy = projectilePos.y - nPixel.dy;
+        final dx = approachPos.x - nPixel.dx;
+        final dy = approachPos.y - nPixel.dy;
         final distSquared = dx * dx + dy * dy;
-        if (distSquared < bestDistSquared) {
-          bestDistSquared = distSquared;
+
+        double penalty = 0.0;
+        if (n.row > hitPos.row) {
+          // Never snap below the hit star.
+          penalty = 999999.0;
+        } else if (movingUp && n.row == hitPos.row) {
+          // Moving upward: same-row neighbours are less preferred than
+          // above-row neighbours — add a moderate penalty so an above cell
+          // at a slightly larger distance still wins.
+          penalty = 40000.0;
+        }
+
+        final score = distSquared + penalty;
+        if (score < bestScore) {
+          bestScore = score;
           best = n;
         }
       }

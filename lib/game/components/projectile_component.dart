@@ -132,15 +132,38 @@ class ProjectileComponent extends PositionComponent
           hitPos: hitGrid,
           board: board.grid,
           boardRect: boardRect,
+          velocity: _velocity,
         );
         if (board.grid.isValidPosition(snapPos) &&
             !board.grid.isOccupied(snapPos)) {
           _placeAtGrid(snapPos);
         } else {
-          // A completely blocked local neighbourhood should not replace an
-          // existing star. Resolve the shot against the nearest valid cell
-          // instead of corrupting the board.
-          _landAt(position);
+          // Snap fell back to an occupied cell — search the hit star's row and
+          // the row above for the nearest free cell rather than using raw pixel.
+          final searchRows = [hitGrid.row - 1, hitGrid.row];
+          GridPosition? fallback;
+          double bestDist = double.infinity;
+          for (final r in searchRows) {
+            if (r < 0) continue;
+            for (int c = 0; c < board.grid.config.cols; c++) {
+              final candidate = GridPosition(r, c);
+              if (!board.grid.isValidPosition(candidate) ||
+                  board.grid.isOccupied(candidate)) { continue; }
+              final px = board.grid.gridToPixel(candidate, boardRect);
+              final dx = position.x - px.dx;
+              final dy = position.y - px.dy;
+              final d = dx * dx + dy * dy;
+              if (d < bestDist) {
+                bestDist = d;
+                fallback = candidate;
+              }
+            }
+          }
+          if (fallback != null) {
+            _placeAtGrid(fallback);
+          } else {
+            _landAt(position);
+          }
         }
         return;
       }
