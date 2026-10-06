@@ -1,4 +1,4 @@
-import 'dart:math' show pi, sin, cos;
+import 'dart:math' show pi;
 import 'dart:ui' show Color, MaskFilter, BlurStyle;
 
 import 'package:flutter/painting.dart'
@@ -10,12 +10,11 @@ import 'package:flutter/painting.dart'
         Offset,
         Paint,
         PaintingStyle,
-        Path,
         RadialGradient,
         Rect,
         StrokeCap;
 
-/// Color theme for a premium star.
+/// Color theme for a premium star rendered as a 3D energy sphere.
 class StarVisualStyle {
   const StarVisualStyle({
     required this.baseColor,
@@ -23,6 +22,7 @@ class StarVisualStyle {
     required this.shadowColor,
     required this.glowColor,
     required this.specularColor,
+    required this.rimColor,
   });
 
   final Color baseColor;
@@ -30,167 +30,92 @@ class StarVisualStyle {
   final Color shadowColor;
   final Color glowColor;
   final Color specularColor;
+  final Color rimColor;
 
   static const yellow = StarVisualStyle(
-    baseColor: Color(0xFFFFCC00),
-    highlightColor: Color(0xFFFFF5B0),
-    shadowColor: Color(0xFFB87800),
-    glowColor: Color(0xFFFFAA00),
-    specularColor: Color(0xFFFFFFCC),
+    baseColor: Color(0xFFFFAA00),
+    highlightColor: Color(0xFFFFF0A0),
+    shadowColor: Color(0xFF7A4400),
+    glowColor: Color(0xFFFF8800),
+    specularColor: Color(0xFFFFFFE0),
+    rimColor: Color(0xFFFFEE88),
   );
 
   static const red = StarVisualStyle(
-    baseColor: Color(0xFFFF2D2D),
-    highlightColor: Color(0xFFFFBBBB),
-    shadowColor: Color(0xFF8B0000),
-    glowColor: Color(0xFFFF4444),
+    baseColor: Color(0xFFEE2222),
+    highlightColor: Color(0xFFFFCCCC),
+    shadowColor: Color(0xFF660000),
+    glowColor: Color(0xFFFF3333),
     specularColor: Color(0xFFFFEEEE),
+    rimColor: Color(0xFFFF8888),
   );
 
   static const green = StarVisualStyle(
-    baseColor: Color(0xFF22CC44),
+    baseColor: Color(0xFF11BB33),
     highlightColor: Color(0xFFAAFFCC),
-    shadowColor: Color(0xFF006620),
-    glowColor: Color(0xFF33FF66),
+    shadowColor: Color(0xFF004411),
+    glowColor: Color(0xFF22DD44),
     specularColor: Color(0xFFEEFFEE),
+    rimColor: Color(0xFF55FF88),
   );
 
   static const blue = StarVisualStyle(
-    baseColor: Color(0xFF1E90FF),
+    baseColor: Color(0xFF1177EE),
     highlightColor: Color(0xFFAADDFF),
-    shadowColor: Color(0xFF003399),
-    glowColor: Color(0xFF44AAFF),
+    shadowColor: Color(0xFF001166),
+    glowColor: Color(0xFF2299FF),
     specularColor: Color(0xFFEEF8FF),
+    rimColor: Color(0xFF66AAFF),
   );
 
   static const purple = StarVisualStyle(
-    baseColor: Color(0xFFAA44FF),
-    highlightColor: Color(0xFFDDBBFF),
-    shadowColor: Color(0xFF550088),
-    glowColor: Color(0xFFBB66FF),
+    baseColor: Color(0xFF9922EE),
+    highlightColor: Color(0xFFEEBBFF),
+    shadowColor: Color(0xFF330066),
+    glowColor: Color(0xFFBB44FF),
     specularColor: Color(0xFFF5EEFF),
+    rimColor: Color(0xFFCC77FF),
   );
 }
 
-/// Builds a rounded, inflated 5-point star [Path] centered at [Offset.zero].
+/// Renders a premium 3D energy sphere at canvas [Offset.zero] with radius [r].
 ///
-/// Cubic bezier curves through each tip and valley produce a soft, glossy shape
-/// that reads as a premium collectible star rather than a harsh polygon.
-Path buildPremiumStarPath(double r) {
-  final outer = r;
-  final inner = r * 0.44;
-  final outerCtrl = r * 0.22;
-  final innerCtrl = r * 0.10;
-
-  final path = Path();
-
-  for (int i = 0; i < 5; i++) {
-    final tipAngle = (i * 2 * pi / 5) - pi / 2;
-    final leftValleyAngle = tipAngle - pi / 5;
-    final rightValleyAngle = tipAngle + pi / 5;
-
-    final tip = Offset(cos(tipAngle) * outer, sin(tipAngle) * outer);
-    final rightValley = Offset(cos(rightValleyAngle) * inner, sin(rightValleyAngle) * inner);
-
-    final tipCtrlLeft = Offset(
-      cos(tipAngle - 0.35) * (outer - outerCtrl),
-      sin(tipAngle - 0.35) * (outer - outerCtrl),
-    );
-    final tipCtrlRight = Offset(
-      cos(tipAngle + 0.35) * (outer - outerCtrl),
-      sin(tipAngle + 0.35) * (outer - outerCtrl),
-    );
-    final leftValleyCtrl = Offset(
-      cos(leftValleyAngle + 0.25) * (inner + innerCtrl),
-      sin(leftValleyAngle + 0.25) * (inner + innerCtrl),
-    );
-    final rightValleyCtrl = Offset(
-      cos(rightValleyAngle - 0.25) * (inner + innerCtrl),
-      sin(rightValleyAngle - 0.25) * (inner + innerCtrl),
-    );
-
-    if (i == 0) {
-      path.moveTo(tip.dx, tip.dy);
-    } else {
-      path.cubicTo(
-        leftValleyCtrl.dx, leftValleyCtrl.dy,
-        tipCtrlLeft.dx, tipCtrlLeft.dy,
-        tip.dx, tip.dy,
-      );
-    }
-
-    path.cubicTo(
-      tipCtrlRight.dx, tipCtrlRight.dy,
-      rightValleyCtrl.dx, rightValleyCtrl.dy,
-      rightValley.dx, rightValley.dy,
-    );
-  }
-
-  // Close back to tip 0 via the last left-valley.
-  const firstTipAngle = -pi / 2;
-  const lastValleyAngle = firstTipAngle - pi / 5;
-  final firstTip = Offset(cos(firstTipAngle) * outer, sin(firstTipAngle) * outer);
-  final lastValleyCtrl = Offset(
-    cos(lastValleyAngle + 0.25) * (inner + innerCtrl),
-    sin(lastValleyAngle + 0.25) * (inner + innerCtrl),
-  );
-  final firstTipCtrlLeft = Offset(
-    cos(firstTipAngle - 0.35) * (outer - outerCtrl),
-    sin(firstTipAngle - 0.35) * (outer - outerCtrl),
-  );
-  path.cubicTo(
-    lastValleyCtrl.dx, lastValleyCtrl.dy,
-    firstTipCtrlLeft.dx, firstTipCtrlLeft.dy,
-    firstTip.dx, firstTip.dy,
-  );
-
-  path.close();
-  return path;
-}
-
-/// Renders a premium-quality star at canvas [Offset.zero] with outer radius [r].
-///
-/// Layers (back to front):
-///   1. Outer soft glow bloom (two passes)
-///   2. Star body with 3-stop radial gradient (bright top-left → base → shadow)
-///   3. Inner shadow overlay (lower-right darkening)
-///   4. Rim highlight stroke
-///   5. Glossy specular ellipse (top-left)
-///   6. Animated shimmer arc
+/// Seven rendering layers (back to front):
+///   1. Outer atmospheric glow bloom
+///   2. Sphere body with 3-stop radial gradient (upper-left light source)
+///   3. Rim light stroke — subtle colored edge
+///   4. Inner energy swirl arc — animated, blurred
+///   5. Specular highlight ellipse (upper-left, compressed vertically)
+///   6. Hotspot dot — tiny bright flare
+///   7. Shimmer sweep arc — animated specular sweep
 class PremiumStarRenderer {
   PremiumStarRenderer(this.style);
 
   final StarVisualStyle style;
 
-  Path? _cachedPath;
-  double _cachedR = 0;
-
-  Path _path(double r) {
-    if (_cachedPath == null || (r - _cachedR).abs() > 0.2) {
-      _cachedPath = buildPremiumStarPath(r);
-      _cachedR = r;
-    }
-    return _cachedPath!;
-  }
-
-  final _glowPaint = Paint()..style = PaintingStyle.fill;
+  // Cached paints — never allocated in render()
+  final _outerGlowPaint = Paint()..style = PaintingStyle.fill;
   final _bodyPaint = Paint()..style = PaintingStyle.fill;
-  final _innerShadowPaint = Paint()..style = PaintingStyle.fill;
   final _rimPaint = Paint()
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.5
+    ..strokeWidth = 1.2
     ..strokeCap = StrokeCap.round;
-  final _specularPaint = Paint()
+  final _swirlPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5
+    ..strokeCap = StrokeCap.round
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+  final _specularPaint = Paint()..style = PaintingStyle.fill;
+  final _hotspotPaint = Paint()
     ..style = PaintingStyle.fill
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    ..color = const Color(0xB3FFFFFF);
   final _shimmerPaint = Paint()
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.0
+    ..strokeWidth = 1.8
     ..strokeCap = StrokeCap.round
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5)
-    ..color = const Color(0x00000000); // overwritten in render()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
-  double _lastBodyR = 0;
+  double _lastBodyR = 0.0;
 
   void render(
     Canvas canvas,
@@ -198,77 +123,72 @@ class PremiumStarRenderer {
     double shimmerT = 0.0,
     double glowAlphaScale = 1.0,
   }) {
-    final path = _path(r);
-    final rect = Rect.fromCircle(center: Offset.zero, radius: r);
-
-    // ── Layer 1: Outer glow bloom ───────────────────────────────────────────
-    _glowPaint
-      ..color = style.glowColor.withValues(alpha: 0.28 * glowAlphaScale)
+    // ── Layer 1: Outer atmospheric glow ────────────────────────────────────
+    _outerGlowPaint
+      ..color = style.glowColor.withValues(alpha: 0.25 * glowAlphaScale)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
-    canvas.drawPath(buildPremiumStarPath(r * 1.40), _glowPaint);
+    canvas.drawCircle(Offset.zero, r * 1.6, _outerGlowPaint);
 
-    _glowPaint
-      ..color = style.glowColor.withValues(alpha: 0.18 * glowAlphaScale)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
-    canvas.drawPath(buildPremiumStarPath(r * 1.15), _glowPaint);
-
-    // ── Layer 2: Star body radial gradient ─────────────────────────────────
+    // ── Layer 2: Sphere body with upper-left light source ──────────────────
     if ((r - _lastBodyR).abs() > 0.2) {
       _bodyPaint.shader = RadialGradient(
-        center: const Alignment(-0.35, -0.45),
+        center: const Alignment(-0.4, -0.45),
         radius: 1.0,
         colors: [
           style.highlightColor,
           style.baseColor,
           style.shadowColor,
         ],
-        stops: const [0.0, 0.52, 1.0],
-      ).createShader(rect);
+        stops: const [0.0, 0.45, 1.0],
+      ).createShader(Rect.fromCircle(center: Offset.zero, radius: r));
       _lastBodyR = r;
     }
-    _glowPaint.maskFilter = null; // clear blur before body draw
-    canvas.drawPath(path, _bodyPaint);
+    canvas.drawCircle(Offset.zero, r, _bodyPaint);
 
-    // ── Layer 3: Inner shadow (lower-right darkening) ──────────────────────
-    _innerShadowPaint.shader = RadialGradient(
-      center: const Alignment(0.5, 0.55),
-      radius: 0.8,
-      colors: [
-        style.shadowColor.withValues(alpha: 0.45),
-        const Color(0x00000000),
-      ],
-      stops: const [0.0, 1.0],
-    ).createShader(rect);
-    canvas.drawPath(path, _innerShadowPaint);
+    // ── Layer 3: Rim stroke ────────────────────────────────────────────────
+    _rimPaint.color = style.rimColor.withValues(alpha: 0.4);
+    canvas.drawCircle(Offset.zero, r, _rimPaint);
 
-    // ── Layer 4: Rim highlight stroke ──────────────────────────────────────
-    _rimPaint.color = style.highlightColor.withValues(alpha: 0.55);
-    canvas.drawPath(path, _rimPaint);
+    // ── Layer 4: Inner energy swirl arc ────────────────────────────────────
+    _swirlPaint.color = style.highlightColor.withValues(alpha: 0.35);
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: r * 0.55),
+      shimmerT * 1.3,
+      1.1,
+      false,
+      _swirlPaint,
+    );
+    _swirlPaint.color = style.glowColor.withValues(alpha: 0.20);
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: r * 0.68),
+      shimmerT * 1.3 + pi,
+      0.9,
+      false,
+      _swirlPaint,
+    );
 
-    // ── Layer 5: Glossy specular ellipse (top-left) ────────────────────────
+    // ── Layer 5: Specular highlight ellipse (upper-left) ──────────────────
     canvas.save();
-    canvas.translate(-r * 0.20, -r * 0.28);
+    canvas.translate(-r * 0.32, -r * 0.36);
     canvas.scale(1.0, 0.65);
     _specularPaint.shader = RadialGradient(
       colors: [
-        style.specularColor.withValues(alpha: 0.90),
+        style.specularColor.withValues(alpha: 0.88),
         style.specularColor.withValues(alpha: 0.0),
       ],
     ).createShader(Rect.fromCircle(center: Offset.zero, radius: r * 0.28));
     canvas.drawCircle(Offset.zero, r * 0.28, _specularPaint);
     canvas.restore();
+    _specularPaint.shader = null;
 
-    // Small secondary specular dot.
-    _specularPaint
-      ..shader = null
-      ..color = style.specularColor.withValues(alpha: 0.55)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
-    canvas.drawCircle(Offset(-r * 0.30, -r * 0.34), r * 0.10, _specularPaint);
+    // ── Layer 6: Hotspot dot ────────────────────────────────────────────────
+    _hotspotPaint.color = const Color(0xB3FFFFFF);
+    canvas.drawCircle(Offset(-r * 0.42, -r * 0.42), r * 0.07, _hotspotPaint);
 
-    // ── Layer 6: Animated shimmer arc ──────────────────────────────────────
-    _shimmerPaint.color = style.specularColor.withValues(alpha: 0.38);
+    // ── Layer 7: Shimmer sweep arc ─────────────────────────────────────────
+    _shimmerPaint.color = style.specularColor.withValues(alpha: 0.30);
     canvas.drawArc(
-      Rect.fromCircle(center: Offset.zero, radius: r * 0.62),
+      Rect.fromCircle(center: Offset.zero, radius: r * 0.70),
       shimmerT,
       0.7,
       false,

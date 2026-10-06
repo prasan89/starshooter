@@ -91,6 +91,7 @@ class ProjectileComponent extends PositionComponent
             position: position.clone(),
             color: _model.displayColor,
             isBounce: true,
+            direction: _velocity.normalized(),
           ),
         );
         continue;
@@ -107,6 +108,7 @@ class ProjectileComponent extends PositionComponent
             position: position.clone(),
             color: _model.displayColor,
             isBounce: true,
+            direction: _velocity.normalized(),
           ),
         );
         continue;
@@ -167,6 +169,7 @@ class ProjectileComponent extends PositionComponent
           ShootingTrailComponent(
             position: position.clone(),
             color: _model.displayColor,
+            direction: _velocity.normalized(),
           ),
         );
       }

@@ -192,35 +192,94 @@ class ShooterComponent extends PositionComponent
   void render(ui.Canvas canvas) {
     final lc = launcherLocalCenter;
 
-    // Subtle platform ring.
-    final platformPaint = Paint()
-      ..color = const Color(0x33FFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawCircle(
-      ui.Offset(lc.x, lc.y),
-      _currentRadius + 10,
-      platformPaint,
+    // Platform base ellipse — gives 3D grounding to the launcher.
+    final platformEllipsePaint = Paint()
+      ..shader = ui.Gradient.radial(
+        ui.Offset(lc.x, lc.y + _currentRadius * 0.3),
+        _currentRadius * 1.8,
+        [
+          const Color(0x554A90E2),
+          const Color(0x004A90E2),
+        ],
+      )
+      ..style = PaintingStyle.fill;
+    canvas.drawOval(
+      ui.Rect.fromCenter(
+        center: ui.Offset(lc.x, lc.y + _currentRadius * 0.6),
+        width: (_currentRadius + 22) * 2.0,
+        height: (_currentRadius + 10) * 0.7,
+      ),
+      platformEllipsePaint,
     );
 
-    // Outer accent ring (rotates with _ringAngle).
+    // Inner ring (r+8) — rotates at base speed.
+    final innerRingPaint = Paint()
+      ..color = const Color(0x664A90E2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
     canvas.drawCircle(
       ui.Offset(lc.x, lc.y),
-      _currentRadius + 6,
+      _currentRadius + 8,
+      innerRingPaint,
+    );
+
+    // Outer ring (r+18) — rotates slightly faster.
+    canvas.drawCircle(
+      ui.Offset(lc.x, lc.y),
+      _currentRadius + 18,
       _ringPaint,
     );
 
-    // Tick marks at 120° apart around the outer ring.
-    for (int i = 0; i < 3; i++) {
-      final angle = _ringAngle + i * (2 * pi / 3);
-      const innerR = _currentRadius + 8;
-      const outerR = _currentRadius + 14;
+    // 6 tick marks at 60° apart on the outer ring.
+    for (int i = 0; i < 6; i++) {
+      final angle = _ringAngle + i * (2 * pi / 6);
+      const innerR = _currentRadius + 14;
+      const outerR = _currentRadius + 22;
+      final isLarge = i % 2 == 0;
       canvas.drawLine(
         ui.Offset(lc.x + cos(angle) * innerR, lc.y + sin(angle) * innerR),
         ui.Offset(lc.x + cos(angle) * outerR, lc.y + sin(angle) * outerR),
         Paint()
-          ..color = const Color(0x884A90E2)
-          ..strokeWidth = 2.0,
+          ..color = isLarge
+              ? const Color(0xBF4A90E2)
+              : const Color(0x664A90E2)
+          ..strokeWidth = isLarge ? 2.0 : 1.0,
+      );
+    }
+
+    // Energy arcs during aiming — two sweeping arcs that intensify.
+    if (_isAiming && _chargeT > 0.05) {
+      final currentColor = _currentType == StarType.normal
+          ? StarColor.fromIndex(_currentColorIndex).color
+          : _currentType.color;
+      final arcPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3)
+        ..strokeCap = ui.StrokeCap.round;
+
+      arcPaint.color = currentColor.withValues(alpha: _chargeT * 0.65);
+      canvas.drawArc(
+        ui.Rect.fromCircle(
+          center: ui.Offset(lc.x, lc.y),
+          radius: _currentRadius + 11,
+        ),
+        _ringAngle * 1.5,
+        pi * 0.8 * _chargeT,
+        false,
+        arcPaint,
+      );
+
+      arcPaint.color = currentColor.withValues(alpha: _chargeT * 0.45);
+      canvas.drawArc(
+        ui.Rect.fromCircle(
+          center: ui.Offset(lc.x, lc.y),
+          radius: _currentRadius + 15,
+        ),
+        _ringAngle * 1.5 + pi,
+        pi * 0.6 * _chargeT,
+        false,
+        arcPaint,
       );
     }
 

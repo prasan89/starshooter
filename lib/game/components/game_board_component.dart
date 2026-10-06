@@ -2,6 +2,8 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:flutter/material.dart' show LinearGradient, Alignment, Colors;
+import 'package:star_shooter/game/components/board_depth_particles.dart';
 import 'package:star_shooter/game/components/gravity_drop_component.dart';
 import 'package:star_shooter/game/components/star_component.dart';
 import 'package:star_shooter/game/fx/floating_score_component.dart';
@@ -46,6 +48,12 @@ class GameBoardComponent extends PositionComponent
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.5;
 
+  // Vignette paints — shaders are rebuilt only when board rect changes.
+  final _vignetteLeft = Paint()..style = PaintingStyle.fill;
+  final _vignetteRight = Paint()..style = PaintingStyle.fill;
+  final _vignetteBottom = Paint()..style = PaintingStyle.fill;
+  Rect _lastVignetteRect = Rect.zero;
+
   GameBoardComponent({LevelDefinition? levelDef})
       : _grid =
             (levelDef?.buildInitialBoard()) ?? BoardGrid.initialBoard(rows: 5),
@@ -58,6 +66,12 @@ class GameBoardComponent extends PositionComponent
     await super.onLoad();
     _updateBoardRect();
     await _syncStarsToBoard();
+    await add(
+      BoardDepthParticles(
+        boardWidth: _boardRect.width,
+        boardHeight: _boardRect.height,
+      ),
+    );
   }
 
   @override
@@ -382,19 +396,47 @@ class GameBoardComponent extends PositionComponent
   void render(Canvas canvas) {
     super.render(canvas);
 
+    final w = _boardRect.width;
+    final h = _boardRect.height;
+
     // Subtle semi-transparent dark panel behind the star grid.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, _boardRect.width, _boardRect.height),
+        Rect.fromLTWH(0, 0, w, h),
         const Radius.circular(16),
       ),
       _bgPaint,
     );
 
+    // Rebuild vignette shaders only when board rect changes.
+    if (_lastVignetteRect != _boardRect) {
+      _lastVignetteRect = _boardRect;
+      _vignetteLeft.shader = const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [Color(0x33050816), Colors.transparent],
+      ).createShader(Rect.fromLTWH(0, 0, w * 0.14, h));
+      _vignetteRight.shader = const LinearGradient(
+        begin: Alignment.centerRight,
+        end: Alignment.centerLeft,
+        colors: [Color(0x33050816), Colors.transparent],
+      ).createShader(Rect.fromLTWH(w * 0.86, 0, w * 0.14, h));
+      _vignetteBottom.shader = const LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [Color(0x59050816), Colors.transparent],
+      ).createShader(Rect.fromLTWH(0, h * 0.72, w, h * 0.28));
+    }
+
+    // Edge vignette — darkens left, right, and bottom edges for depth.
+    canvas.drawRect(Rect.fromLTWH(0, 0, w * 0.14, h), _vignetteLeft);
+    canvas.drawRect(Rect.fromLTWH(w * 0.86, 0, w * 0.14, h), _vignetteRight);
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.72, w, h * 0.28), _vignetteBottom);
+
     // Board outline.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, _boardRect.width, _boardRect.height),
+        Rect.fromLTWH(0, 0, w, h),
         const Radius.circular(16),
       ),
       _borderPaint,

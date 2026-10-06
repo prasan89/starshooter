@@ -1,4 +1,4 @@
-import 'dart:math' show sin, pi;
+import 'dart:math' show sin, cos, pi, Random;
 
 import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
@@ -42,6 +42,7 @@ class CosmicBackgroundComponent extends PositionComponent {
 
   static const int _starCount = 150;
   static const int _seed = 0xDEADBEEF;
+  static const int _dustCount = 30;
 
   // Per-star data (normalized [0,1] fractions).
   final List<double> _starFracX = [];
@@ -54,12 +55,24 @@ class CosmicBackgroundComponent extends PositionComponent {
   final List<double> _starPxX = [];
   final List<double> _starPxY = [];
 
+  // Cosmic dust particles — sub-pixel, very faint, slow drift.
+  final List<double> _dustFracX = [];
+  final List<double> _dustFracY = [];
+  final List<double> _dustR = [];
+  final List<double> _dustAlpha = [];
+  final List<double> _dustDriftX = [];
+  final List<double> _dustDriftY = [];
+  final List<double> _dustPhase = [];
+  final List<double> _dustPxX = [];
+  final List<double> _dustPxY = [];
+
   double _time = 0.0;
 
   // ── Cached paint objects ─────────────────────────────────────────────────
 
   final _bgPaint = Paint()..color = AppColors.background;
   final _starPaint = Paint();
+  final _dustPaint = Paint();
   final _nebulaPaint1 = Paint();
   final _nebulaPaint2 = Paint();
   final _nebulaPaint3 = Paint();
@@ -91,6 +104,19 @@ class CosmicBackgroundComponent extends PositionComponent {
       _starBrightness.add(0.4 + nf() * 0.6);
       _starTwinklePhase.add(nf() * 2 * pi);
     }
+
+    final rng = Random(_seed ^ 0xABCDEF);
+    for (int i = 0; i < _dustCount; i++) {
+      _dustFracX.add(rng.nextDouble());
+      _dustFracY.add(rng.nextDouble());
+      _dustR.add(0.3 + rng.nextDouble() * 0.5);
+      _dustAlpha.add(0.08 + rng.nextDouble() * 0.07);
+      final speed = 2.0 + rng.nextDouble() * 3.0;
+      final angle = rng.nextDouble() * 2 * pi;
+      _dustDriftX.add(cos(angle) * speed);
+      _dustDriftY.add(sin(angle) * speed);
+      _dustPhase.add(rng.nextDouble() * 2 * pi);
+    }
   }
 
   @override
@@ -108,6 +134,12 @@ class CosmicBackgroundComponent extends PositionComponent {
     for (int i = 0; i < _starFracX.length; i++) {
       _starPxX.add(_starFracX[i] * sz.x);
       _starPxY.add(_starFracY[i] * sz.y);
+    }
+    _dustPxX.clear();
+    _dustPxY.clear();
+    for (int i = 0; i < _dustFracX.length; i++) {
+      _dustPxX.add(_dustFracX[i] * sz.x);
+      _dustPxY.add(_dustFracY[i] * sz.y);
     }
   }
 
@@ -191,7 +223,19 @@ class CosmicBackgroundComponent extends PositionComponent {
       );
     }
 
-    // 4. Reactive pulse overlay
+    // 4. Cosmic dust — sub-pixel particles drifting very slowly.
+    if (_dustPxX.isNotEmpty) {
+      for (int i = 0; i < _dustPxX.length; i++) {
+        final driftedX = (_dustPxX[i] + _dustDriftX[i] * _time) % sz.x;
+        final driftedY = (_dustPxY[i] + _dustDriftY[i] * _time) % sz.y;
+        final pulse = 0.85 + sin(_dustPhase[i] + _time * 0.4) * 0.15;
+        final alpha = (_dustAlpha[i] * pulse).clamp(0.0, 1.0);
+        _dustPaint.color = Color.fromARGB((alpha * 255).round(), 220, 230, 255);
+        canvas.drawCircle(Offset(driftedX, driftedY), _dustR[i], _dustPaint);
+      }
+    }
+
+    // 5. Reactive pulse overlay
     if (_pulseElapsed < _pulseDuration && _pulseIntensity > 0.01) {
       final pulseT = (_pulseElapsed / _pulseDuration).clamp(0.0, 1.0);
       final fadeAlpha = _pulseIntensity * (1.0 - pulseT) * 0.18;

@@ -1,4 +1,4 @@
-import 'dart:math' show pi, cos, sin, Random;
+import 'dart:math' show pi, cos, sin, Random, atan2;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
@@ -27,6 +27,12 @@ class ShootingTrailComponent extends PositionComponent {
   final _innerGlowPaint = Paint();
   final _corePaint = Paint();
   final _particlePaint = Paint();
+  final _bouncePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.0;
+
+  /// Direction of travel — used to elongate the outer glow oval.
+  final Vector2 _direction;
 
   /// Set to true for a wall-bounce energy burst (larger, brighter, shorter)
   final bool _isBounce;
@@ -35,9 +41,11 @@ class ShootingTrailComponent extends PositionComponent {
     required Vector2 position,
     required Color color,
     bool isBounce = false,
+    Vector2? direction,
     int seed = 0,
   })  : _color = color,
         _isBounce = isBounce,
+        _direction = direction?.normalized() ?? Vector2(0, -1),
         super(
           position: position,
           anchor: Anchor.center,
@@ -45,13 +53,16 @@ class ShootingTrailComponent extends PositionComponent {
           size: Vector2.all(isBounce ? _radius * 8 : _radius * 5),
         ) {
     final rng = Random(seed);
+    // Base particle drift angle biased opposite to direction of travel
+    final backAngle = atan2(-_direction.y, -_direction.x);
     _microParticles = List.generate(
       isBounce ? 5 : 3,
       (i) {
-        final angle = rng.nextDouble() * 2 * pi;
+        final spread = isBounce ? pi : pi * 0.6;
+        final angle = backAngle + (rng.nextDouble() - 0.5) * spread;
         final speed = isBounce
             ? 60.0 + rng.nextDouble() * 80.0
-            : 20.0 + rng.nextDouble() * 40.0;
+            : 15.0 + rng.nextDouble() * 35.0;
         return _MicroParticle(
           vel: Vector2(cos(angle) * speed, sin(angle) * speed),
           radius: 1.5 + rng.nextDouble() * 2.5,
@@ -77,11 +88,22 @@ class ShootingTrailComponent extends PositionComponent {
     final scale = _isBounce ? 1.8 : 1.0;
     final r = _radius * scale;
 
-    // Outer soft glow bloom
+    // Outer glow — elongated oval aligned to direction of travel (2:1 ratio)
     _outerGlowPaint
       ..color = _color.withValues(alpha: _alpha * 0.22)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.9);
-    canvas.drawCircle(Offset.zero, r * 1.8, _outerGlowPaint);
+    final travelAngle = atan2(_direction.y, _direction.x);
+    canvas.save();
+    canvas.rotate(travelAngle + pi / 2); // align long axis to travel direction
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset.zero,
+        width: r * 1.8,
+        height: r * 3.2, // 2:1 elongated in travel direction
+      ),
+      _outerGlowPaint,
+    );
+    canvas.restore();
 
     // Inner glow
     _innerGlowPaint
@@ -97,7 +119,7 @@ class ShootingTrailComponent extends PositionComponent {
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset.zero, r * 0.38, _corePaint);
 
-    // Micro-particles
+    // Micro-particles drifting backward
     for (final p in _microParticles) {
       final pAlpha = _alpha * 0.7;
       _particlePaint
@@ -110,12 +132,10 @@ class ShootingTrailComponent extends PositionComponent {
     if (_isBounce && _elapsed < 0.08) {
       final ringProgress = _elapsed / 0.08;
       final ringR = r * (1.0 + ringProgress * 2.0);
-      final ringPaint = Paint()
+      _bouncePaint
         ..color = _color.withValues(alpha: (1.0 - ringProgress) * 0.6)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-      canvas.drawCircle(Offset.zero, ringR, ringPaint);
+      canvas.drawCircle(Offset.zero, ringR, _bouncePaint);
     }
   }
 }
