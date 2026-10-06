@@ -61,6 +61,13 @@ class ShooterComponent extends PositionComponent
   bool _justLoaded = false;
   double _loadFlashElapsed = 0.0;
 
+  // ── Charge / aim state ─────────────────────────────────────────────────────
+  bool _isAiming = false;
+  double _chargeT = 0.0;         // 0→1 as player holds aim
+  static const double _chargeRate = 1.8; // seconds to full charge
+  late Paint _chargeGlowPaint;
+  late Paint _chargePulsePaint;
+
   ShooterComponent() : super(priority: 5);
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -81,7 +88,7 @@ class ShooterComponent extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
-    _ringAngle = (_ringAngle + dt * 0.3) % (2 * pi);
+    _ringAngle = (_ringAngle + dt * (_isAiming ? 1.2 : 0.3)) % (2 * pi);
     _shimmerT = (_shimmerT + dt) % (2 * pi);
     if (_justLoaded) {
       _loadFlashElapsed += dt;
@@ -89,6 +96,11 @@ class ShooterComponent extends PositionComponent
         _justLoaded = false;
         _loadFlashElapsed = 0;
       }
+    }
+    if (_isAiming) {
+      _chargeT = (_chargeT + dt / _chargeRate).clamp(0.0, 1.0);
+    } else {
+      _chargeT = (_chargeT - dt * 3.0).clamp(0.0, 1.0);
     }
   }
 
@@ -132,6 +144,14 @@ class ShooterComponent extends PositionComponent
       ..color = const Color(0x884A90E2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
+
+    _chargeGlowPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+    _chargePulsePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -144,7 +164,19 @@ class ShooterComponent extends PositionComponent
     _nextColorIndex = nextColorIndex;
     _justLoaded = true;
     _loadFlashElapsed = 0.0;
+    _chargeT = 0.0;
     _updatePaints();
+  }
+
+  /// Begin the launcher charge animation (call when drag starts).
+  void startAiming() {
+    _isAiming = true;
+    _chargeT = 0.0;
+  }
+
+  /// Stop the launcher charge animation (call when drag ends or shot fires).
+  void stopAiming() {
+    _isAiming = false;
   }
 
   /// Local coords (relative to this component's [position]).
@@ -199,10 +231,34 @@ class ShooterComponent extends PositionComponent
       _currentGlowPaint,
     );
 
-    // Current star — slightly larger during the load flash.
+    // Charge animation — energy builds as player aims
+    if (_chargeT > 0.01) {
+      final currentColor = _currentType == StarType.normal
+          ? StarColor.fromIndex(_currentColorIndex).color
+          : _currentType.color;
+      // Expanding charge glow
+      _chargeGlowPaint.color = currentColor.withValues(alpha: _chargeT * 0.45);
+      canvas.drawCircle(
+        ui.Offset(lc.x, lc.y),
+        _currentRadius * (1.8 + _chargeT * 0.8),
+        _chargeGlowPaint,
+      );
+      // Pulsing charge ring
+      _chargePulsePaint
+        ..color = currentColor.withValues(alpha: _chargeT * 0.6)
+        ..strokeWidth = 2.0 + _chargeT * 1.5;
+      canvas.drawCircle(
+        ui.Offset(lc.x, lc.y),
+        _currentRadius * (1.5 + _chargeT * 0.6),
+        _chargePulsePaint,
+      );
+    }
+
+    // Current star — slightly larger during the load flash or charge.
+    final chargeBoost = _chargeT * 0.15;
     final starRadius = _justLoaded
         ? _currentRadius * (1.0 + 0.2 * (1.0 - _loadFlashElapsed / 0.3))
-        : _currentRadius.toDouble();
+        : _currentRadius * (1.0 + chargeBoost);
 
     // Extra glow during load flash.
     if (_justLoaded) {

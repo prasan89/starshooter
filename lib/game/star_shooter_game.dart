@@ -45,6 +45,7 @@ class StarShooterGame extends FlameGame
   late ShooterComponent _shooter;
   late AimTrajectoryComponent _trajectory;
   late ScreenEffectsComponent _screenEffects;
+  late CosmicBackgroundComponent _background;
 
   Vector2 _aimDirection = Vector2(0, -1);
   bool _isDragging = false;
@@ -62,6 +63,7 @@ class StarShooterGame extends FlameGame
   ShooterComponent get shooter => _shooter;
   AimTrajectoryComponent get trajectory => _trajectory;
   ScreenEffectsComponent get screenEffects => _screenEffects;
+  CosmicBackgroundComponent get background => _background;
   LevelDefinition? get currentLevelDef => _currentLevelDef;
   AudioService get audio => audioService;
   HapticService get haptic => hapticService;
@@ -84,7 +86,8 @@ class StarShooterGame extends FlameGame
     camera.viewfinder.anchor = Anchor.topLeft;
 
     // Layer order (priority): background(-10) < board(0) < shooter(5).
-    await add(CosmicBackgroundComponent());
+    _background = CosmicBackgroundComponent();
+    await add(_background);
 
     _currentLevelDef =
         LevelCatalog.getLevelById(levelId) ?? LevelDefinition.forLevel(levelId);
@@ -171,6 +174,7 @@ class StarShooterGame extends FlameGame
     if (!turnSystem.canShoot) return;
     _isDragging = true;
     turnSystem.startAiming();
+    _shooter.startAiming();
     final dir = _computeAimDir(event.canvasPosition);
     _aimDirection = dir;
     _trajectory.showTrajectory(
@@ -198,6 +202,7 @@ class StarShooterGame extends FlameGame
     super.onDragEnd(event);
     if (!_isDragging) return;
     _isDragging = false;
+    _shooter.stopAiming();
     _trajectory.hideTrajectory();
     shootProjectile();
   }
@@ -216,6 +221,7 @@ class StarShooterGame extends FlameGame
     turnSystem.shoot();
     gameManager.updateShooterState(ShooterGameState.shooting);
     gameManager.onShot();
+    _shooter.stopAiming();
 
     final currentType = gameManager.currentStarType;
     final model = StarModel.projectile(

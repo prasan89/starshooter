@@ -10,6 +10,7 @@ import 'package:star_shooter/core/theme/app_colors.dart';
 /// - Deep space base fill
 /// - Three nebula lobes at distinct positions with slow drift
 /// - 150 deterministic stars (seeded LCG) that slowly twinkle
+/// - Reactive brightness pulses on match/combo events
 ///
 /// Performance: star pixel positions and nebula paint objects are cached and
 /// only recomputed on resize. Per-frame work is minimal: 2 sin() calls for
@@ -17,6 +18,26 @@ import 'package:star_shooter/core/theme/app_colors.dart';
 class CosmicBackgroundComponent extends PositionComponent {
   CosmicBackgroundComponent() : super(priority: -10) {
     _generateStars();
+  }
+
+  // ── Reactive pulse state ─────────────────────────────────────────────────
+  double _pulseIntensity = 0.0;
+  double _pulseElapsed = 0.0;
+  double _pulseDuration = 0.0;
+  Color _pulseColor = const Color(0x00FFFFFF);
+
+  /// Trigger a reactive pulse from a match or combo event.
+  ///
+  /// [intensity] 0.0–1.0 controls brightness. [comboLevel] boosts both
+  /// intensity and duration (x3=nebula pulse, x5+=cosmic energy wave).
+  void triggerPulse({required Color color, double intensity = 0.3, int comboLevel = 1}) {
+    final boosted = (intensity * (1.0 + comboLevel * 0.2)).clamp(0.0, 1.0);
+    if (boosted > _pulseIntensity) {
+      _pulseIntensity = boosted;
+    }
+    _pulseElapsed = 0.0;
+    _pulseDuration = 0.3 + comboLevel * 0.08;
+    _pulseColor = color;
   }
 
   static const int _starCount = 150;
@@ -122,6 +143,9 @@ class CosmicBackgroundComponent extends PositionComponent {
   @override
   void update(double dt) {
     _time += dt;
+    if (_pulseElapsed < _pulseDuration) {
+      _pulseElapsed += dt;
+    }
   }
 
   @override
@@ -164,6 +188,18 @@ class CosmicBackgroundComponent extends PositionComponent {
         Offset(_starPxX[i], _starPxY[i]),
         _starR[i],
         _starPaint,
+      );
+    }
+
+    // 4. Reactive pulse overlay
+    if (_pulseElapsed < _pulseDuration && _pulseIntensity > 0.01) {
+      final pulseT = (_pulseElapsed / _pulseDuration).clamp(0.0, 1.0);
+      final fadeAlpha = _pulseIntensity * (1.0 - pulseT) * 0.18;
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, sz.x, sz.y),
+        Paint()
+          ..color = _pulseColor.withValues(alpha: fadeAlpha)
+          ..style = PaintingStyle.fill,
       );
     }
   }

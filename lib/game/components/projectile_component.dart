@@ -3,7 +3,9 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:star_shooter/game/components/premium_star_renderer.dart';
+import 'package:star_shooter/game/fx/impact_flash_effect.dart';
 import 'package:star_shooter/game/fx/shooting_trail_component.dart';
+import 'package:star_shooter/game/fx/combo_cinematic_component.dart';
 import 'package:star_shooter/game/managers/game_manager.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/shooter_game_state.dart';
@@ -84,6 +86,13 @@ class ProjectileComponent extends PositionComponent
       if (nextPosition.x - _model.collisionRadius <= 0) {
         position = Vector2(_model.collisionRadius, nextPosition.y);
         _velocity = CollisionSystem.reflectHorizontal(_velocity);
+        game.add(
+          ShootingTrailComponent(
+            position: position.clone(),
+            color: _model.displayColor,
+            isBounce: true,
+          ),
+        );
         continue;
       }
 
@@ -93,6 +102,13 @@ class ProjectileComponent extends PositionComponent
           nextPosition.y,
         );
         _velocity = CollisionSystem.reflectHorizontal(_velocity);
+        game.add(
+          ShootingTrailComponent(
+            position: position.clone(),
+            color: _model.displayColor,
+            isBounce: true,
+          ),
+        );
         continue;
       }
 
@@ -219,6 +235,14 @@ class ProjectileComponent extends PositionComponent
     ts.onProjectileLanded();
     game.audioService.playImpact();
 
+    // Impact flash effect at the landing position
+    game.add(
+      ImpactFlashEffect(
+        position: position.clone(),
+        color: _model.displayColor,
+      ),
+    );
+
     // Capture board state BEFORE resolution for the objective evaluator.
     final boardBefore = game.board.grid;
 
@@ -232,16 +256,34 @@ class ProjectileComponent extends PositionComponent
         game.audioService.playMatch();
         game.hapticService.onMatch();
         game.screenEffects.onMatch(_model.displayColor);
+        game.background.triggerPulse(
+          color: _model.displayColor,
+          intensity: 0.25,
+          comboLevel: result.comboLevel,
+        );
         if (result.comboLevel > 2) {
           game.audioService.playCascade();
           game.hapticService.onCascade();
           game.screenEffects.onCascade(result.comboLevel, _model.displayColor);
+          // Combo cinematic overlay
+          game.add(
+            ComboCinematicComponent(
+              position: game.size / 2,
+              comboLevel: result.comboLevel,
+              color: _model.displayColor,
+            ),
+          );
         }
       }
       if (result.specialEffectTargets.isNotEmpty) {
         game.audioService.playCascade(); // reuse cascade sfx for specials
         game.hapticService.onCascade();
         game.screenEffects.onCascade(2, _model.displayColor);
+        game.background.triggerPulse(
+          color: _model.displayColor,
+          intensity: 0.3,
+          comboLevel: 2,
+        );
       }
     }
 

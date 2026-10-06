@@ -2,12 +2,12 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
-import 'package:star_shooter/game/components/pop_animation_component.dart';
 import 'package:star_shooter/game/components/gravity_drop_component.dart';
 import 'package:star_shooter/game/components/star_component.dart';
 import 'package:star_shooter/game/fx/floating_score_component.dart';
 import 'package:star_shooter/game/fx/particle_config.dart';
 import 'package:star_shooter/game/fx/particle_emitter_component.dart';
+import 'package:star_shooter/game/fx/star_explosion_effect.dart';
 import 'package:star_shooter/game/models/board_grid.dart';
 import 'package:star_shooter/game/models/grid_position.dart';
 import 'package:star_shooter/game/models/level_definition.dart';
@@ -135,26 +135,44 @@ class GameBoardComponent extends PositionComponent
     ResolutionResult result,
     GridPosition placedPos,
   ) async {
-    // Spawn pop animations and particle bursts for matched stars.
+    // Compute intensity scale from combo level for visual escalation.
+    final comboLevel = result.comboLevel;
+    final intensityScale = comboLevel >= 5
+        ? 2.5
+        : comboLevel >= 4
+            ? 2.0
+            : comboLevel >= 3
+                ? 1.5
+                : comboLevel >= 2
+                    ? 1.2
+                    : 1.0;
+
+    // Spawn premium explosion + particle burst for matched stars.
     for (final group in result.matchedGroups) {
-      for (final pos in group) {
+      for (int i = 0; i < group.length; i++) {
+        final pos = group[i];
         final pixel = _grid.gridToPixel(pos, _boardRect);
         final star = _grid.starAt(pos);
         if (star != null) {
           game.add(
-            PopAnimationComponent(
+            StarExplosionEffect(
               position: Vector2(pixel.dx, pixel.dy),
               color: star.displayColor,
+              intensityScale: intensityScale,
+              seed: i,
             ),
           );
           final config = group.length >= 5
               ? ParticleConfig.popLarge
-              : ParticleConfig.popSmall;
+              : comboLevel >= 3
+                  ? ParticleConfig.cascade
+                  : ParticleConfig.popSmall;
           game.add(
             ParticleEmitterComponent(
               position: Vector2(pixel.dx, pixel.dy),
               color: star.displayColor,
               config: config,
+              seed: i + group.length,
             ),
           );
         }
@@ -201,24 +219,26 @@ class GameBoardComponent extends PositionComponent
       );
     }
     // Special effect targets — larger burst + different particle config
-    for (final pos in result.specialEffectTargets) {
+    for (int i = 0; i < result.specialEffectTargets.length; i++) {
+      final pos = result.specialEffectTargets[i];
       final pixel = _grid.gridToPixel(pos, _boardRect);
       final star = _grid.starAt(pos);
       if (star != null) {
-        // Determine particle config by the special type that was activated
-        // (we don't know which type caused it here, use cascade config as default)
         final config = _particleConfigForSpecial(pos);
+        game.add(
+          StarExplosionEffect(
+            position: Vector2(pixel.dx, pixel.dy),
+            color: star.displayColor,
+            intensityScale: 1.5,
+            seed: i + 100,
+          ),
+        );
         game.add(
           ParticleEmitterComponent(
             position: Vector2(pixel.dx, pixel.dy),
             color: star.displayColor,
             config: config,
-          ),
-        );
-        game.add(
-          PopAnimationComponent(
-            position: Vector2(pixel.dx, pixel.dy),
-            color: star.displayColor,
+            seed: i + 200,
           ),
         );
       }
